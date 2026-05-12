@@ -6,10 +6,14 @@ namespace ClinicCurs.Infrastructure.Data;
 
 public class ClinicDbContext : DbContext
 {
-    public ClinicDbContext(DbContextOptions<ClinicDbContext> options) : base(options) { }
+    public ClinicDbContext(DbContextOptions<ClinicDbContext> options) : base(options)
+    {
+    }
 
     #region DbSets
+
     public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordReset> PasswordResets => Set<PasswordReset>();
     public DbSet<Office> Offices => Set<Office>();
     public DbSet<Registrar> Registrars => Set<Registrar>();
@@ -29,6 +33,7 @@ public class ClinicDbContext : DbContext
     public DbSet<Recommendation> Recommendations => Set<Recommendation>();
     public DbSet<LabTestsDictionary> LabTestsDictionaries => Set<LabTestsDictionary>();
     public DbSet<LabResult> LabResults => Set<LabResult>();
+
     #endregion
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -46,25 +51,37 @@ public class ClinicDbContext : DbContext
         modelBuilder.HasPostgresEnum<DiagnosisType>();
         modelBuilder.HasPostgresEnum<RecommendationType>();
 
-        modelBuilder.Entity<Registrar>().HasOne(e => e.Account).WithOne(e => e.Registrar).HasForeignKey<Registrar>(e => e.AccountId);
-        modelBuilder.Entity<Doctor>().HasOne(e => e.Account).WithOne(e => e.Doctor).HasForeignKey<Doctor>(e => e.AccountId);
-        modelBuilder.Entity<Patient>().HasOne(e => e.Account).WithOne(e => e.Patient).HasForeignKey<Patient>(e => e.AccountId);
-        modelBuilder.Entity<Review>().HasOne(e => e.Appointment).WithOne(e => e.Review).HasForeignKey<Review>(e => e.AppointmentId);
-        modelBuilder.Entity<MedicalCard>().HasOne(e => e.Patient).WithOne(e => e.MedicalCard).HasForeignKey<MedicalCard>(e => e.PatientId);
-        modelBuilder.Entity<MedicalRecord>().HasOne(e => e.Appointment).WithOne(e => e.MedicalRecord).HasForeignKey<MedicalRecord>(e => e.AppointmentId);
+        modelBuilder.Entity<Registrar>().HasOne(e => e.Account).WithOne(e => e.Registrar)
+            .HasForeignKey<Registrar>(e => e.AccountId);
+        modelBuilder.Entity<Doctor>().HasOne(e => e.Account).WithOne(e => e.Doctor)
+            .HasForeignKey<Doctor>(e => e.AccountId);
+        modelBuilder.Entity<Patient>().HasOne(e => e.Account).WithOne(e => e.Patient)
+            .HasForeignKey<Patient>(e => e.AccountId);
+        modelBuilder.Entity<Review>().HasOne(e => e.Appointment).WithOne(e => e.Review)
+            .HasForeignKey<Review>(e => e.AppointmentId);
+        modelBuilder.Entity<MedicalCard>().HasOne(e => e.Patient).WithOne(e => e.MedicalCard)
+            .HasForeignKey<MedicalCard>(e => e.PatientId);
+        modelBuilder.Entity<MedicalRecord>().HasOne(e => e.Appointment).WithOne(e => e.MedicalRecord)
+            .HasForeignKey<MedicalRecord>(e => e.AppointmentId);
 
         modelBuilder.Entity<DoctorSpecialization>().HasKey(e => new { e.DoctorId, e.SpecializationId });
         modelBuilder.Entity<RecordDiagnosis>().HasKey(e => new { e.RecordId, e.DiagnosisId });
+        modelBuilder.Entity<RefreshToken>()
+            .HasOne(rt => rt.Account)
+            .WithMany(a => a.RefreshTokens)
+            .HasForeignKey(rt => rt.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
             var clrType = entity.ClrType;
-            
+
             // Определяем префикс таблицы (tbl_ или m2m_)
-            string prefix = clrType.Name.Contains("Specialization") && clrType.Name.Contains("Doctor") || 
-                            clrType.Name.Contains("Record") && clrType.Name.Contains("Diagnosis") 
-                            ? "m2m_" : "tbl_";
-            
+            string prefix = clrType.Name.Contains("Specialization") && clrType.Name.Contains("Doctor") ||
+                            clrType.Name.Contains("Record") && clrType.Name.Contains("Diagnosis")
+                ? "m2m_"
+                : "tbl_";
+
             entity.SetTableName(prefix + clrType.Name.ToSnakeCase());
 
             foreach (var property in entity.GetProperties())

@@ -7,7 +7,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Presentation.Endpoints;
-
 public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this WebApplication app)
@@ -17,7 +16,6 @@ public static class AuthEndpoints
         group.MapPost("/register", async (RegisterAccountCommand command, IMediator mediator) =>
         {
             var result = await mediator.Send(command);
-            
             return result.IsSuccess 
                 ? Results.Ok(new { Message = "Регистрация успешна!", AccountId = result.AccountId }) 
                 : Results.BadRequest(result.ErrorMessage);
@@ -28,10 +26,34 @@ public static class AuthEndpoints
             var result = await mediator.Send(command);
             
             return result.IsSuccess 
-                ? Results.Ok(new { Token = result.Token }) 
+                ? Results.Ok(new { AccessToken = result.AccessToken, RefreshToken = result.RefreshToken }) 
                 : Results.Unauthorized();
         });
 
+        // Обновление токена
+        group.MapPost("/refresh", async (RefreshTokenCommand command, IMediator mediator) =>
+        {
+            var result = await mediator.Send(command);
+            
+            return result.IsSuccess 
+                ? Results.Ok(new { AccessToken = result.AccessToken, RefreshToken = result.RefreshToken }) 
+                : Results.BadRequest(new { error = result.ErrorMessage });
+        });
+        
+        group.MapGet("/verify-email", async (string token, IMediator mediator) =>
+        {
+            if (string.IsNullOrWhiteSpace(token)) 
+                return Results.BadRequest("Токен обязателен.");
+
+            var command = new VerifyEmailCommand(token);
+            var result = await mediator.Send(command);
+
+            return result.IsSuccess 
+                ? Results.Ok(new { Message = "Email успешно подтвержден!" }) 
+                : Results.BadRequest(new { error = result.ErrorMessage });
+        });
+
+        // Тестовый метод
         app.MapGet("/api/secure-data", (ClaimsPrincipal user) =>
             {
                 var email = user.FindFirstValue(ClaimTypes.Email);

@@ -28,20 +28,7 @@ public static class AuthExtensions
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                 };
-            
-                options.Events = new JwtBearerEvents
-                {
-                    OnAuthenticationFailed = context =>
-                    {
-                        Console.WriteLine("Ошибка аутентификации: " + context.Exception.Message);
-                        return Task.CompletedTask;
-                    },
-                    OnTokenValidated = context =>
-                    {
-                        Console.WriteLine("Токен успешно принят для: " + context.Principal?.Identity?.Name);
-                        return Task.CompletedTask;
-                    }
-                };
+                
             });
 
         services.AddAuthorization();

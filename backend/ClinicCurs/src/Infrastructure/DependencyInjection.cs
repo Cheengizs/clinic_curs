@@ -4,6 +4,7 @@ using ClinicCurs.Infrastructure.Data;
 using Domain.Enums;
 using Infrastructure.Auth;
 using Infrastructure.Repositories;
+using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,8 @@ public static class DependencyInjection
     {
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtProvider, JwtProvider>();
-
+        services.AddScoped<IEmailService, MailKitEmailService>();
+        
         var connectionString = configuration.GetConnectionString("Postgres");
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
 

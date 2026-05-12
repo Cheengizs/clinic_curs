@@ -98,6 +98,7 @@ public class Account
     public virtual Registrar Registrar { get; set; }
     public virtual Doctor Doctor { get; set; }
     public virtual Patient Patient { get; set; }
+    public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public virtual ICollection<PasswordReset> PasswordResets { get; set; }
     public virtual ICollection<VerificationRequest> VerificationRequests { get; set; }
     public virtual ICollection<Appointment> Appointments { get; set; }
