@@ -1,8 +1,8 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Repositories;
-using ClinicCurs.Infrastructure.Data;
 using Domain.Enums;
 using Infrastructure.Auth;
+using Infrastructure.Data;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +26,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<ISmsService, MockSmsService>();
+        services.AddScoped<IBlobService, BlobService>();
         
         var connectionString = configuration.GetConnectionString("Postgres");
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);

@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using Application.Features.Auth.Commands;
 using Application.Interfaces;
-using ClinicCurs.Infrastructure.Data;
 using Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -124,5 +123,5 @@ public static class AuthEndpoints
     }
 }
 
-public record RegisterRequest(string Email, string Password, string Phone);
+public record RegisterRequest(string Email, string Password);
 public record LoginRequest(string Email, string Password);

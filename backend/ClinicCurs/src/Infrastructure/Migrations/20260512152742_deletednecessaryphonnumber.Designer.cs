@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ClinicDbContext))]
-    partial class ClinicDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260512152742_deletednecessaryphonnumber")]
+    partial class deletednecessaryphonnumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -969,10 +972,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("middle_name");
 
-                    b.Property<Guid>("OfficeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("office_id");
-
                     b.Property<string>("PassportSeriesNumber")
                         .IsRequired()
                         .HasColumnType("text")
@@ -990,10 +989,6 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("RegistrarId")
                         .HasColumnType("uuid")
                         .HasColumnName("registrar_id");
-
-                    b.Property<DateTime>("ScheduledAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("scheduled_at");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")

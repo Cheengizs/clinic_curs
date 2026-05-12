@@ -22,47 +22,43 @@ public class ConfirmPhoneCodeHandler : IRequestHandler<ConfirmPhoneCodeCommand, 
 
     public async Task<ConfirmPhoneCodeResult> Handle(ConfirmPhoneCodeCommand request, CancellationToken cancellationToken)
     {
-        // 1. Ищем аккаунт в базе данных
         var account = await _accountRepo.GetByIdAsync(request.AccountId);
         if (account == null) 
             return new ConfirmPhoneCodeResult(false, "Аккаунт не найден.");
 
-        // 2. НОВАЯ ПРОВЕРКА: Если телефон уже подтвержден — выходим с ошибкой
         if (account.PhoneVerified)
-        {
             return new ConfirmPhoneCodeResult(false, "Ваш номер телефона уже был подтвержден ранее.");
-        }
 
-        // 3. Достаем код из Redis
         var cacheKey = $"phone_verify_code_{request.AccountId}";
         var storedCode = await _cache.GetStringAsync(cacheKey, cancellationToken);
 
         if (storedCode == null)
-        {
             return new ConfirmPhoneCodeResult(false, "Срок действия кода истек или он не был запрошен.");
-        }
 
         if (storedCode != request.Code)
-        {
             return new ConfirmPhoneCodeResult(false, "Введен неверный код подтверждения.");
-        }
 
-        // 4. Пытаемся достать НОВЫЙ номер из Redis (если была смена номера)
         var pendingPhone = await _cache.GetStringAsync($"pending_phone_{request.AccountId}", cancellationToken);
 
         if (!string.IsNullOrEmpty(pendingPhone))
         {
+            // НОВАЯ ПРОВЕРКА (Защита от состояния гонки): 
+            // Проверяем, не успел ли кто-то другой подтвердить этот номер, пока мы вводили код
+            bool isPhoneTaken = await _accountRepo.AnyAsync(a => a.Phone == pendingPhone && a.PhoneVerified && a.Id != request.AccountId);
+            if (isPhoneTaken)
+            {
+                return new ConfirmPhoneCodeResult(false, "К сожалению, этот номер уже был привязан к другому аккаунту.");
+            }
+
             account.Phone = pendingPhone;
         }
 
-        // 5. Обновляем статус аккаунта
         account.PhoneVerified = true;
         account.LastPhoneUpdate = DateTime.UtcNow;
         
         _accountRepo.Update(account);
         await _accountRepo.SaveChangesAsync();
 
-        // 6. Очищаем временные данные в Redis
         await _cache.RemoveAsync(cacheKey, cancellationToken);
         await _cache.RemoveAsync($"pending_phone_{request.AccountId}", cancellationToken);
         

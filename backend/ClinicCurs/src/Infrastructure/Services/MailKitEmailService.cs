@@ -79,4 +79,30 @@ public class MailKitEmailService : IEmailService
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
     }
+    
+    public async Task SendStaffCredentialsEmailAsync(string toEmail, string password)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_configuration["Smtp:SenderName"], _configuration["Smtp:SenderEmail"]));
+        message.To.Add(new MailboxAddress("", toEmail));
+        message.Subject = "Ваши учетные данные - Clinic Curs";
+
+        var htmlBody = $@"
+        <div style='font-family: Arial, sans-serif; padding: 20px;'>
+            <h2>Добро пожаловать в команду!</h2>
+            <p>Для вас был создан аккаунт сотрудника. Используйте следующие данные для входа:</p>
+            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #dee2e6;'>
+                <p><strong>Email:</strong> {toEmail}</p>
+                <p><strong>Пароль:</strong> {password}</p>
+            </div>
+            <p style='color: #dc3545;'><strong>Внимание:</strong> Пожалуйста, смените пароль после первого входа в систему.</p>
+        </div>";
+
+        message.Body = new TextPart(TextFormat.Html) { Text = htmlBody };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(_configuration["Smtp:Host"], int.Parse(_configuration["Smtp:Port"]!), false);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
 }

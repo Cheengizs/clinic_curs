@@ -2,6 +2,7 @@ using Application;
 using Infrastructure;
 using Presentation.Endpoints;
 using Presentation.Extension;
+using Presentation.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,13 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+await app.Migrations();
+
 app.MapAuthEndpoints();
+app.MapVerificationEndpoints();
+app.MapFilesEndpoints();
 app.MapSystemEndpoints();
+app.MapClinicEndpoints();
+app.MapAdminEndpoints();
 
 app.Run();

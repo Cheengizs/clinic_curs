@@ -87,7 +87,7 @@ public class Account
     public Guid Id { get; set; }
     public string Email { get; set; }
     public string PasswordHash { get; set; }
-    public string Phone { get; set; }
+    public string? Phone { get; set; }
     public bool EmailVerified { get; set; }
     public bool PhoneVerified { get; set; }
     public DateTime? LastPhoneUpdate { get; set; }
@@ -96,9 +96,10 @@ public class Account
     public bool IsDeleted { get; set; }
 
     // Navigation
-    public virtual Registrar Registrar { get; set; }
-    public virtual Doctor Doctor { get; set; }
-    public virtual Patient Patient { get; set; }
+    public virtual Registrar? Registrar { get; set; }
+    public virtual Admin? Admin { get; set; } 
+    public virtual Doctor? Doctor { get; set; }
+    public virtual Patient? Patient { get; set; }
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public virtual ICollection<PasswordReset> PasswordResets { get; set; }
     public virtual ICollection<VerificationRequest> VerificationRequests { get; set; }
@@ -123,7 +124,7 @@ public class Office
     public string Address { get; set; }
     public string Phone { get; set; }
     public bool IsActive { get; set; }
-    public string PhotoUrl { get; set; }
+    public string? PhotoUrl { get; set; }
 
     public virtual ICollection<Doctor> Doctors { get; set; }
     public virtual ICollection<Registrar> Registrars { get; set; }
@@ -161,7 +162,8 @@ public class VerificationRequest
     public DateOnly BirthDate { get; set; }
     public string PassportSeriesNumber { get; set; }
     public string PersonalNumber { get; set; }
-    public string DocumentScanUrl { get; set; }
+    public Guid OfficeId { get; set; }
+    public DateTime ScheduledAt { get; set; }
     public VerificationStatuses Status { get; set; }
     public Guid? RegistrarId { get; set; }
     public DateTime? ProcessedAt { get; set; }

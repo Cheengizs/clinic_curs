@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 using Application.Interfaces.Repositories;
-using ClinicCurs.Infrastructure.Data;
+using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;

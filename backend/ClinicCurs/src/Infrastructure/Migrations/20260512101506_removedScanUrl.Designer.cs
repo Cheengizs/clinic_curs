@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ClinicDbContext))]
-    partial class ClinicDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260512101506_removedScanUrl")]
+    partial class removedScanUrl
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,6 +70,7 @@ namespace Infrastructure.Migrations
                         .HasColumnName("password_hash");
 
                     b.Property<string>("Phone")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("phone");
 
@@ -81,46 +85,6 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tbl_account");
-                });
-
-            modelBuilder.Entity("Domain.Models.Admin", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("account_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("first_name");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("last_name");
-
-                    b.Property<string>("MiddleName")
-                        .HasColumnType("text")
-                        .HasColumnName("middle_name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountId")
-                        .IsUnique();
-
-                    b.ToTable("tbl_admin");
                 });
 
             modelBuilder.Entity("Domain.Models.Appointment", b =>
@@ -542,6 +506,7 @@ namespace Infrastructure.Migrations
                         .HasColumnName("phone");
 
                     b.Property<string>("PhotoUrl")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("photo_url");
 
@@ -969,10 +934,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("middle_name");
 
-                    b.Property<Guid>("OfficeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("office_id");
-
                     b.Property<string>("PassportSeriesNumber")
                         .IsRequired()
                         .HasColumnType("text")
@@ -991,10 +952,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("registrar_id");
 
-                    b.Property<DateTime>("ScheduledAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("scheduled_at");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -1006,17 +963,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("RegistrarId");
 
                     b.ToTable("tbl_verification_request");
-                });
-
-            modelBuilder.Entity("Domain.Models.Admin", b =>
-                {
-                    b.HasOne("Domain.Models.Account", "Account")
-                        .WithOne("Admin")
-                        .HasForeignKey("Domain.Models.Admin", "AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("Domain.Models.Appointment", b =>
@@ -1314,19 +1260,20 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Models.Account", b =>
                 {
-                    b.Navigation("Admin");
-
                     b.Navigation("Appointments");
 
-                    b.Navigation("Doctor");
+                    b.Navigation("Doctor")
+                        .IsRequired();
 
                     b.Navigation("PasswordResets");
 
-                    b.Navigation("Patient");
+                    b.Navigation("Patient")
+                        .IsRequired();
 
                     b.Navigation("RefreshTokens");
 
-                    b.Navigation("Registrar");
+                    b.Navigation("Registrar")
+                        .IsRequired();
 
                     b.Navigation("VerificationRequests");
                 });

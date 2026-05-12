@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Domain.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace ClinicCurs.Infrastructure.Data;
+namespace Infrastructure.Data;
 
 public class ClinicDbContext : DbContext
 {
@@ -33,6 +33,7 @@ public class ClinicDbContext : DbContext
     public DbSet<Recommendation> Recommendations => Set<Recommendation>();
     public DbSet<LabTestsDictionary> LabTestsDictionaries => Set<LabTestsDictionary>();
     public DbSet<LabResult> LabResults => Set<LabResult>();
+    public DbSet<Admin> Admins => Set<Admin>();
 
     #endregion
 
@@ -63,7 +64,10 @@ public class ClinicDbContext : DbContext
             .HasForeignKey<MedicalCard>(e => e.PatientId);
         modelBuilder.Entity<MedicalRecord>().HasOne(e => e.Appointment).WithOne(e => e.MedicalRecord)
             .HasForeignKey<MedicalRecord>(e => e.AppointmentId);
-
+        modelBuilder.Entity<Admin>()
+            .HasOne(e => e.Account)
+            .WithOne(e => e.Admin)
+            .HasForeignKey<Admin>(e => e.AccountId);
         modelBuilder.Entity<DoctorSpecialization>().HasKey(e => new { e.DoctorId, e.SpecializationId });
         modelBuilder.Entity<RecordDiagnosis>().HasKey(e => new { e.RecordId, e.DiagnosisId });
         modelBuilder.Entity<RefreshToken>()
@@ -96,6 +100,7 @@ public class ClinicDbContext : DbContext
         modelBuilder.Entity<Icd10Dictionary>().ToTable("tbl_icd10_dictionary");
         modelBuilder.Entity<DoctorSpecialization>().ToTable("m2m_doctor_specialization");
         modelBuilder.Entity<RecordDiagnosis>().ToTable("m2m_record_diagnosis");
+        
     }
 }
 

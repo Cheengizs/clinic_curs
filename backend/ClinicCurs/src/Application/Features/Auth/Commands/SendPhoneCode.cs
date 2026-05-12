@@ -45,7 +45,7 @@ public class SendPhoneCodeHandler : IRequestHandler<SendPhoneCodeCommand, SendPh
 
         var code = new Random().Next(100000, 999999).ToString();
         
-        var cacheKey = $"phone_verify_{request.AccountId}";
+        var cacheKey = $"phone_verify_code_{request.AccountId}";
         await _cache.SetStringAsync(cacheKey, code, new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)

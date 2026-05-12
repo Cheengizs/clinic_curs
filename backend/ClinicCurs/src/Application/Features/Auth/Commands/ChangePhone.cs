@@ -31,6 +31,13 @@ public class RequestPhoneChangeHandler : IRequestHandler<RequestPhoneChangeComma
         if (!account.EmailVerified) 
             return new ChangePhoneResult(false, "Сначала подтвердите Email.");
 
+        // НОВАЯ ПРОВЕРКА: Занят ли номер другим аккаунтом?
+        bool isPhoneTaken = await _accountRepo.AnyAsync(a => a.Phone == request.NewPhone && a.PhoneVerified);
+        if (isPhoneTaken)
+        {
+            return new ChangePhoneResult(false, "Этот номер телефона уже привязан к другому аккаунту.");
+        }
+
         if (account.LastPhoneUpdate.HasValue && (DateTime.UtcNow - account.LastPhoneUpdate.Value).TotalDays < 1)
         {
             var timeLeft = TimeSpan.FromDays(1) - (DateTime.UtcNow - account.LastPhoneUpdate.Value);
@@ -40,7 +47,6 @@ public class RequestPhoneChangeHandler : IRequestHandler<RequestPhoneChangeComma
         var code = new Random().Next(100000, 999999).ToString();
         var cacheOptions = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) };
 
-        // Сохраняем код И новый номер в Redis
         await _cache.SetStringAsync($"phone_verify_code_{request.AccountId}", code, cacheOptions, cancellationToken);
         await _cache.SetStringAsync($"pending_phone_{request.AccountId}", request.NewPhone, cacheOptions, cancellationToken);
 

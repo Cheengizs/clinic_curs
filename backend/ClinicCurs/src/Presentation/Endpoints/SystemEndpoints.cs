@@ -1,4 +1,4 @@
-﻿using ClinicCurs.Infrastructure.Data;
+﻿using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Presentation.Endpoints;

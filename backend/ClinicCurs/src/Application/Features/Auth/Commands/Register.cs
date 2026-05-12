@@ -6,7 +6,8 @@ using MediatR;
 namespace Application.Features.Auth.Commands;
 public record RegisterAccountResult(bool IsSuccess, string? ErrorMessage, Guid? AccountId);
 
-public record RegisterAccountCommand(string Email, string Password, string Phone) 
+// 1. Убрали параметр Phone
+public record RegisterAccountCommand(string Email, string Password) 
     : IRequest<RegisterAccountResult>;
 
 public class RegisterAccountCommandHandler : IRequestHandler<RegisterAccountCommand, RegisterAccountResult>
@@ -16,7 +17,6 @@ public class RegisterAccountCommandHandler : IRequestHandler<RegisterAccountComm
     private readonly IJwtProvider _jwtProvider;
     private readonly IEmailService _emailService;
 
-    // Внедряем новые зависимости
     public RegisterAccountCommandHandler(
         IGenericRepository<Account> accountRepo, 
         IPasswordHasher hasher,
@@ -39,18 +39,17 @@ public class RegisterAccountCommandHandler : IRequestHandler<RegisterAccountComm
             Email = request.Email,
             PasswordHash = _hasher.Hash(request.Password),
             Role = RoleType.patient,
-            Phone = request.Phone,
-            EmailVerified = false 
+            Phone = null, // 2. Явно указываем null (или можно вообще удалить эту строку)
+            EmailVerified = false,
+            PhoneVerified = false 
         };
 
         await _accountRepo.AddAsync(newAccount);
         await _accountRepo.SaveChangesAsync();
 
         var emailToken = _jwtProvider.GenerateEmailVerificationToken(newAccount);
-        
         var verifyLink = $"http://localhost:5133/api/auth/verify-email?token={emailToken}";
 
-        // 3. Отправляем письмо (в консоль)
         await _emailService.SendVerificationEmailAsync(newAccount.Email, verifyLink);
 
         return new RegisterAccountResult(true, null, newAccount.Id);
