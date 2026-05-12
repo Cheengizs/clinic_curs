@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -30,9 +30,10 @@ namespace Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     email = table.Column<string>(type: "text", nullable: false),
                     password_hash = table.Column<string>(type: "text", nullable: false),
-                    phone = table.Column<string>(type: "text", nullable: false),
+                    phone = table.Column<string>(type: "text", nullable: true),
                     email_verified = table.Column<bool>(type: "boolean", nullable: false),
                     phone_verified = table.Column<bool>(type: "boolean", nullable: false),
+                    last_phone_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     identity_verified = table.Column<bool>(type: "boolean", nullable: false),
                     role = table.Column<int>(type: "integer", nullable: false),
                     is_deleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -90,7 +91,7 @@ namespace Infrastructure.Migrations
                     address = table.Column<string>(type: "text", nullable: false),
                     phone = table.Column<string>(type: "text", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    photo_url = table.Column<string>(type: "text", nullable: false)
+                    photo_url = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -103,11 +104,34 @@ namespace Infrastructure.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     name = table.Column<string>(type: "text", nullable: false),
-                    description = table.Column<string>(type: "text", nullable: false)
+                    description = table.Column<string>(type: "text", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_tbl_specialization", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_admin",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    first_name = table.Column<string>(type: "text", nullable: false),
+                    last_name = table.Column<string>(type: "text", nullable: false),
+                    middle_name = table.Column<string>(type: "text", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_admin", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_admin_tbl_account_account_id",
+                        column: x => x.account_id,
+                        principalTable: "tbl_account",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -154,6 +178,28 @@ namespace Infrastructure.Migrations
                     table.PrimaryKey("PK_tbl_patient", x => x.id);
                     table.ForeignKey(
                         name: "FK_tbl_patient_tbl_account_account_id",
+                        column: x => x.account_id,
+                        principalTable: "tbl_account",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_refresh_token",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    token = table.Column<string>(type: "text", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    is_revoked = table.Column<bool>(type: "boolean", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_refresh_token", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_refresh_token_tbl_account_account_id",
                         column: x => x.account_id,
                         principalTable: "tbl_account",
                         principalColumn: "id",
@@ -366,7 +412,8 @@ namespace Infrastructure.Migrations
                     birth_date = table.Column<DateOnly>(type: "date", nullable: false),
                     passport_series_number = table.Column<string>(type: "text", nullable: false),
                     personal_number = table.Column<string>(type: "text", nullable: false),
-                    document_scan_url = table.Column<string>(type: "text", nullable: false),
+                    office_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    scheduled_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
                     registrar_id = table.Column<Guid>(type: "uuid", nullable: true),
                     processed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -563,6 +610,12 @@ namespace Infrastructure.Migrations
                 column: "diagnosis_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_tbl_admin_account_id",
+                table: "tbl_admin",
+                column: "account_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_tbl_appointment_account_id",
                 table: "tbl_appointment",
                 column: "account_id");
@@ -657,6 +710,11 @@ namespace Infrastructure.Migrations
                 column: "record_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_tbl_refresh_token_account_id",
+                table: "tbl_refresh_token",
+                column: "account_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_tbl_registrar_account_id",
                 table: "tbl_registrar",
                 column: "account_id",
@@ -714,10 +772,16 @@ namespace Infrastructure.Migrations
                 name: "m2m_record_diagnosis");
 
             migrationBuilder.DropTable(
+                name: "tbl_admin");
+
+            migrationBuilder.DropTable(
                 name: "tbl_lab_result");
 
             migrationBuilder.DropTable(
                 name: "tbl_password_reset");
+
+            migrationBuilder.DropTable(
+                name: "tbl_refresh_token");
 
             migrationBuilder.DropTable(
                 name: "tbl_review");

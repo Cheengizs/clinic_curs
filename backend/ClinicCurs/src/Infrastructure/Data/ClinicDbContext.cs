@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Domain.Enums;
 using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 

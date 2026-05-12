@@ -1,86 +1,6 @@
-﻿namespace Domain.Models;
+﻿using Domain.Enums;
 
-#region 1. Enums (Domain Types)
-
-public enum RoleType
-{
-    patient,
-    doctor,
-    registrar,
-    admin
-}
-
-public enum Gender
-{
-    male,
-    female
-}
-
-public enum VerificationStatuses
-{
-    wait,
-    verified,
-    declined
-}
-
-public enum AppointmentStatuses
-{
-    planned,
-    confirmed,
-    completed,
-    cancelled,
-    no_show
-}
-
-public enum AppointmentCategory
-{
-    initial_consultation,
-    follow_up,
-    diagnostic,
-    procedure,
-    vaccination
-}
-
-public enum LabStatus
-{
-    pending,
-    ready,
-    cancelled
-}
-
-public enum BloodTypeEnum
-{
-    O_first,
-    A_second,
-    B_third,
-    AB_fourth
-}
-
-public enum RhesusFactorEnum
-{
-    positive,
-    negative,
-    neutral
-}
-
-public enum DiagnosisType
-{
-    main,
-    concomitant,
-    complication
-}
-
-public enum RecommendationType
-{
-    medication,
-    procedure,
-    lifestyle,
-    analysis
-}
-
-#endregion
-
-#region 2. Entities (Tables)
+namespace Domain.Models;
 
 public class Account
 {
@@ -198,6 +118,7 @@ public class Specialization
     public Guid Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public bool IsActive { get; set; } = true;
     public virtual ICollection<DoctorSpecialization> DoctorSpecializations { get; set; }
 }
 
@@ -211,7 +132,7 @@ public class Doctor
     public string MiddleName { get; set; }
     public string Bio { get; set; }
     public DateOnly? HiredAt { get; set; }
-    public string AvatarUrl { get; set; }
+    public string AvatarUrl { get; set; } = "default_doctor.png";
     public decimal RatingAvg { get; set; }
     public bool IsActive { get; set; }
     public bool IsDeleted { get; set; }
@@ -391,4 +312,3 @@ public class LabResult
     public virtual Office Office { get; set; }
 }
 
-#endregion

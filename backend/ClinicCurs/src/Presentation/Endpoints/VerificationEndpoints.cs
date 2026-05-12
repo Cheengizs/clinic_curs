@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Application.Features.Verification.Commands;
 using Application.Interfaces.Repositories;
+using Domain.Enums;
 using Domain.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -84,6 +85,6 @@ public record SubmitVerificationDto(
     DateOnly BirthDate, 
     string PassportSeriesNumber, 
     string PersonalNumber,
-    Guid OfficeId,          // <-- Новое поле
-    DateTime ScheduledAt    // <-- Новое поле
+    Guid OfficeId,          
+    DateTime ScheduledAt    
 );

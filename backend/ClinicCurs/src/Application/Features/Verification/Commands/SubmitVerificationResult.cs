@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces.Repositories;
+using Domain.Enums;
 using Domain.Models;
 using MediatR;
 
@@ -13,8 +14,8 @@ public record SubmitVerificationRequestCommand(
     DateOnly BirthDate,
     string PassportSeriesNumber,
     string PersonalNumber,
-    Guid OfficeId,           // <-- Добавили
-    DateTime ScheduledAt     // <-- Добавили
+    Guid OfficeId,          
+    DateTime ScheduledAt    
 ) : IRequest<SubmitVerificationResult>;
 
 public class SubmitVerificationRequestCommandHandler : IRequestHandler<SubmitVerificationRequestCommand, SubmitVerificationResult>

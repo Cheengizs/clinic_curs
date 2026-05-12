@@ -1,4 +1,6 @@
 ﻿using Application.Features.Admin.Commands;
+using Application.Interfaces.Repositories;
+using Domain.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,6 +41,38 @@ public static class AdminEndpoints
                     Password = result.Password 
                 }) 
                 : Results.BadRequest(new { error = result.ErrorMessage });
+        });
+        
+        group.MapPost("/specializations", async ([FromBody] CreateSpecializationCommand command, IMediator mediator) =>
+        {
+            var id = await mediator.Send(command);
+            return Results.Ok(new { SpecializationId = id });
+        });
+
+        group.MapGet("/specializations", async (IGenericRepository<Specialization> repo) =>
+        {
+            var specs = await repo.FindAsync(s => s.IsActive);
+            return Results.Ok(specs.Select(s => new { s.Id, s.Name, s.Description }));
+        });
+        
+        group.MapPost("/doctors", async ([FromBody] RegisterDoctorCommand command, IMediator mediator) =>
+        {
+            var result = await mediator.Send(command);
+            
+            return result.IsSuccess 
+                ? Results.Ok(new 
+                { 
+                    Message = "Доктор успешно добавлен в систему.", 
+                    Email = result.Email, 
+                    Password = result.Password 
+                }) 
+                : Results.BadRequest(new { error = result.ErrorMessage });
+        });
+        
+        group.MapPost("/appointment-types", async ([FromBody] CreateAppointmentTypeCommand command, IMediator mediator) =>
+        {
+            var id = await mediator.Send(command);
+            return Results.Ok(new { AppointmentTypeId = id });
         });
     }
 }

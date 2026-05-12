@@ -19,8 +19,10 @@ public static class WebAppMigrations
                 var passwordHasher = services.GetRequiredService<IPasswordHasher>();
 
                 await context.Database.MigrateAsync();
-
-                // await ClinicDbSeeder.SeedAdminAsync(context, passwordHasher);
+                await ClinicDbSeeder.SeedSpecializationsAsync(context);
+                await ClinicDbSeeder.SeedAppointmentTypesAsync(context);
+                await ClinicDbSeeder.SeedAdminAsync(context, passwordHasher);
+                
             }
             catch (Exception ex)
             {
