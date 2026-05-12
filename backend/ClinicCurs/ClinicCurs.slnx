@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Resources/">
+    <File Path="Resources/compose.yaml" />
+    <File Path="Resources/initial.sql" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Application/Application.csproj" />
+    <Project Path="src/Domain/Domain.csproj" />
+    <Project Path="src/Infrastructure/Infrastructure.csproj" />
+    <Project Path="src/Presentation/Presentation.csproj" />
+  </Folder>
+</Solution>
