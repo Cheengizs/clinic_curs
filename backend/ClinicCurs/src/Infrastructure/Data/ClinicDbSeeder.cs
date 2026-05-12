@@ -79,4 +79,95 @@ public static class ClinicDbSeeder
             await context.SaveChangesAsync();
         }
     }
+    
+    public static async Task SeedOfficesAndDoctorsAsync(ClinicDbContext context, IPasswordHasher hasher)
+{
+    var office = await context.Offices.FirstOrDefaultAsync();
+    if (office == null)
+    {
+        office = new Office
+        {
+            Id = Guid.NewGuid(),
+            Name = "Главный корпус",
+            Address = "ул. Медицинская, д. 1",
+            Phone = "+375 (29) 111-22-33",
+            IsActive = true,
+            PhotoUrl = "default_office.png"
+        };
+        await context.Offices.AddAsync(office);
+        await context.SaveChangesAsync();
+    }
+
+    if (!await context.Accounts.AnyAsync(a => a.Role == RoleType.doctor))
+    {
+        var therapistSpec = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "Терапевт");
+        var surgeonSpec = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "Хирург");
+
+        if (therapistSpec == null || surgeonSpec == null) return; // Защита от ошибок
+
+        var doc1Account = new Account
+        {
+            Email = "smirnova@clinic.com",
+            PasswordHash = hasher.Hash("doc_pass"),
+            Role = RoleType.doctor,
+            Phone = "+375290000001",
+            EmailVerified = true,
+            PhoneVerified = true,
+            IdentityVerified = true
+        };
+        await context.Accounts.AddAsync(doc1Account);
+
+        var doc2Account = new Account
+        {
+            Email = "sokolov@clinic.com",
+            PasswordHash = hasher.Hash("doc_pass"),
+            Role = RoleType.doctor,
+            Phone = "+375290000002",
+            EmailVerified = true,
+            PhoneVerified = true,
+            IdentityVerified = true
+        };
+        await context.Accounts.AddAsync(doc2Account);
+        
+        await context.SaveChangesAsync(); 
+
+        var doc1 = new Doctor
+        {
+            AccountId = doc1Account.Id,
+            OfficeId = office.Id,
+            FirstName = "Анна",
+            LastName = "Смирнова",
+            MiddleName = "Ивановна",
+            Bio = "Врач-терапевт высшей категории с заботливым подходом к каждому пациенту. Специализируется на сложных диагностических случаях.",
+            HiredAt = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-3)),
+            AvatarUrl = "default_doctor.png",
+            RatingAvg = 4.9m,
+            IsActive = true
+        };
+
+        var doc2 = new Doctor
+        {
+            AccountId = doc2Account.Id,
+            OfficeId = office.Id,
+            FirstName = "Дмитрий",
+            LastName = "Соколов",
+            MiddleName = "Петрович",
+            Bio = "Ведущий хирург клиники. Выполняет малоинвазивные операции. Стажировался в ведущих клиниках Европы.",
+            HiredAt = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-5)),
+            AvatarUrl = "default_doctor.png",
+            RatingAvg = 5.0m,
+            IsActive = true
+        };
+
+        await context.Doctors.AddRangeAsync(doc1, doc2);
+        await context.SaveChangesAsync(); 
+
+        await context.DoctorSpecializations.AddRangeAsync(
+            new DoctorSpecialization { DoctorId = doc1.Id, SpecializationId = therapistSpec.Id, IsPrimary = true, CareerStartDate = new DateOnly(2012, 8, 1) },
+            new DoctorSpecialization { DoctorId = doc2.Id, SpecializationId = surgeonSpec.Id, IsPrimary = true, CareerStartDate = new DateOnly(2008, 9, 1) }
+        );
+        
+        await context.SaveChangesAsync();
+    }
+}
 }

@@ -51,6 +51,17 @@ services:
       - azurite_data:/data
     networks:
       - clinic_network
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --skipApiVersionCheck"
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: clinic_mailpit
+    restart: always
+    ports:
+      - "1025:1025" 
+      - "8025:8025" 
+    networks:
+      - clinic_network
 
 networks:
   clinic_network:

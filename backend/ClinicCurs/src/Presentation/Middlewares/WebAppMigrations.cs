@@ -21,6 +21,7 @@ public static class WebAppMigrations
                 await context.Database.MigrateAsync();
                 await ClinicDbSeeder.SeedSpecializationsAsync(context);
                 await ClinicDbSeeder.SeedAppointmentTypesAsync(context);
+                await ClinicDbSeeder.SeedOfficesAndDoctorsAsync(context, passwordHasher);
                 await ClinicDbSeeder.SeedAdminAsync(context, passwordHasher);
                 
             }

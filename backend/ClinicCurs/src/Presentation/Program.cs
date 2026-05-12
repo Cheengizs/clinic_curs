@@ -4,6 +4,7 @@ using Presentation.Endpoints;
 using Presentation.Extension;
 using Presentation.Middlewares;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();

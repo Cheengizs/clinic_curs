@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Application.Features.Auth.Commands;
 using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +112,25 @@ public static class AuthEndpoints
                 ? Results.Ok(new { Message = "Успешный выход из системы." }) 
                 : Results.BadRequest(new { error = result.ErrorMessage });
         });
+        
+        group.MapGet("/me", async (ClaimsPrincipal user, IGenericRepository<Account> accountRepo) =>
+        {
+            var accountIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(accountIdClaim, out var accountId)) return Results.Unauthorized();
+
+            var account = await accountRepo.GetByIdAsync(accountId);
+            if (account == null) return Results.NotFound();
+
+            return Results.Ok(new 
+            { 
+                account.Email, 
+                account.Phone, 
+                account.EmailVerified, 
+                account.PhoneVerified, 
+                account.IdentityVerified,
+                Role = account.Role.ToString() 
+            });
+        }).RequireAuthorization();
 
         app.MapGet("/api/secure-data", (ClaimsPrincipal user) =>
             {
