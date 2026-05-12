@@ -32,6 +32,21 @@ public static class AuthExtensions
             });
 
         services.AddAuthorization();
+        
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("AdminOnly", policy => 
+                policy.RequireRole("admin"));
+            
+            options.AddPolicy("StaffOnly", policy => 
+                policy.RequireRole("admin", "registrar"));
+            
+            options.AddPolicy("DoctorOnly", policy => 
+                policy.RequireRole("doctor"));
+            
+            options.AddPolicy("PatientOnly", policy => 
+                policy.RequireRole("patient"));
+        });
 
         return services;
     }

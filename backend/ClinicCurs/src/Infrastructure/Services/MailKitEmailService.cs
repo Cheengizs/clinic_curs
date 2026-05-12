@@ -56,4 +56,27 @@ public class MailKitEmailService : IEmailService
             throw;
         }
     }
+    
+    public async Task SendPasswordResetEmailAsync(string toEmail, string resetLink)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_configuration["Smtp:SenderName"], _configuration["Smtp:SenderEmail"]));
+        message.To.Add(new MailboxAddress("", toEmail));
+        message.Subject = "Сброс пароля - Clinic Curs";
+
+        var htmlBody = $@"
+        <div style='font-family: Arial, sans-serif; padding: 20px;'>
+            <h2>Восстановление доступа</h2>
+            <p>Вы получили это письмо, потому что запросили сброс пароля. Нажмите на кнопку ниже, чтобы установить новый пароль:</p>
+            <p><a href='{resetLink}' style='padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;'>Сбросить пароль</a></p>
+            <p>Ссылка действительна в течение 1 часа.</p>
+        </div>";
+
+        message.Body = new TextPart(TextFormat.Html) { Text = htmlBody };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(_configuration["Smtp:Host"], int.Parse(_configuration["Smtp:Port"]!), false);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
 }

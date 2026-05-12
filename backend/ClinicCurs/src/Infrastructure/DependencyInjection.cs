@@ -19,6 +19,13 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddScoped<IEmailService, MailKitEmailService>();
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration.GetConnectionString("Redis");
+            options.InstanceName = "Clinic_";
+        });
+
+        services.AddScoped<ISmsService, MockSmsService>();
         
         var connectionString = configuration.GetConnectionString("Postgres");
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);

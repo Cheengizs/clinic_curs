@@ -90,6 +90,7 @@ public class Account
     public string Phone { get; set; }
     public bool EmailVerified { get; set; }
     public bool PhoneVerified { get; set; }
+    public DateTime? LastPhoneUpdate { get; set; }
     public bool IdentityVerified { get; set; }
     public RoleType Role { get; set; }
     public bool IsDeleted { get; set; }
