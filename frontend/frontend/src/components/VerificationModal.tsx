@@ -3,6 +3,7 @@ import { clinicApi } from "../api/clinicApi";
 import {
   verificationApi,
   type SubmitVerificationDto,
+  type VerificationRequestDto,
 } from "../api/verificationApi";
 import type { OfficeDto } from "../types/clinic";
 
@@ -10,12 +11,14 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: VerificationRequestDto | null; // Данные для редактирования
 }
 
 export default function VerificationModal({
   isOpen,
   onClose,
   onSuccess,
+  initialData,
 }: Props) {
   const [offices, setOffices] = useState<OfficeDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,8 +38,38 @@ export default function VerificationModal({
   useEffect(() => {
     if (isOpen) {
       clinicApi.getOffices().then(setOffices);
+
+      if (initialData) {
+        // Предзаполняем форму данными из существующей заявки
+        setForm({
+          firstName: initialData.firstName,
+          lastName: initialData.lastName,
+          middleName: initialData.middleName || "",
+          birthDate: initialData.birthDate,
+          passportSeriesNumber: initialData.passportSeriesNumber,
+          personalNumber: initialData.personalNumber,
+          officeId: initialData.officeId,
+          // Форматируем дату для инпута datetime-local (YYYY-MM-DDTHH:mm)
+          scheduledAt: new Date(initialData.scheduledAt)
+            .toLocaleString("sv-SE")
+            .replace(" ", "T")
+            .slice(0, 16),
+        });
+      } else {
+        // Сбрасываем форму для новой записи
+        setForm({
+          firstName: "",
+          lastName: "",
+          middleName: "",
+          birthDate: "",
+          passportSeriesNumber: "",
+          personalNumber: "",
+          officeId: "",
+          scheduledAt: "",
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
@@ -51,12 +84,17 @@ export default function VerificationModal({
     };
 
     try {
-      await verificationApi.submitRequest(dataToSend);
-      alert("Заявка успешно создана!");
+      if (initialData) {
+        await verificationApi.updateRequest(dataToSend);
+        alert("Заявка успешно обновлена!");
+      } else {
+        await verificationApi.submitRequest(dataToSend);
+        alert("Заявка успешно создана!");
+      }
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.error || "Ошибка при отправке данных");
+      setError(err.response?.data?.error || "Ошибка при сохранении данных");
     } finally {
       setLoading(false);
     }
@@ -68,7 +106,7 @@ export default function VerificationModal({
         <div className="p-8 md:p-12">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-black text-slate-900">
-              Запись на верификацию
+              {initialData ? "Редактирование записи" : "Запись на верификацию"}
             </h2>
             <button
               onClick={onClose}
@@ -88,7 +126,6 @@ export default function VerificationModal({
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
-            {/* Личные данные */}
             <div className="space-y-4 md:col-span-2">
               <h3 className="text-sm font-bold uppercase tracking-widest text-blue-600">
                 Личные данные
@@ -150,7 +187,6 @@ export default function VerificationModal({
               />
             </div>
 
-            {/* Паспортные данные */}
             <div className="space-y-4 md:col-span-2 mt-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-blue-600">
                 Документы
@@ -187,7 +223,6 @@ export default function VerificationModal({
               />
             </div>
 
-            {/* Куда и когда */}
             <div className="space-y-4 md:col-span-2 mt-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-blue-600">
                 Место и время
@@ -231,7 +266,11 @@ export default function VerificationModal({
               type="submit"
               className="md:col-span-2 mt-8 w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-200"
             >
-              {loading ? "Отправка..." : "Отправить заявку"}
+              {loading
+                ? "Сохранение..."
+                : initialData
+                  ? "Обновить данные"
+                  : "Отправить заявку"}
             </button>
           </form>
         </div>

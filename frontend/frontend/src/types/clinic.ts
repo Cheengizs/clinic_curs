@@ -30,3 +30,9 @@ export interface OfficeDto {
   phone: string;
   photoUrl: string;
 }
+
+export interface AppointmentTypeDto {
+  id: string;
+  category: string | number;
+  defaultDurationMinutes: number;
+}

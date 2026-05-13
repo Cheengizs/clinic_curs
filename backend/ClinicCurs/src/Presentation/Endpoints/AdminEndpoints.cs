@@ -74,6 +74,14 @@ public static class AdminEndpoints
             var id = await mediator.Send(command);
             return Results.Ok(new { AppointmentTypeId = id });
         });
+        
+        group.MapPost("/schedules", async ([FromBody] CreateScheduleCommand command, IMediator mediator) =>
+        {
+            var result = await mediator.Send(command);
+            return result 
+                ? Results.Ok(new { Message = "Расписание успешно добавлено." }) 
+                : Results.BadRequest(new { error = "У этого врача уже есть расписание на выбранный день." });
+        });
     }
 }
 

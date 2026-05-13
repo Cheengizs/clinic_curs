@@ -11,7 +11,6 @@ public class ClinicDbContext : DbContext
     {
     }
 
-    #region DbSets
 
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -36,7 +35,6 @@ public class ClinicDbContext : DbContext
     public DbSet<LabResult> LabResults => Set<LabResult>();
     public DbSet<Admin> Admins => Set<Admin>();
 
-    #endregion
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -101,7 +99,6 @@ public class ClinicDbContext : DbContext
         modelBuilder.Entity<Icd10Dictionary>().ToTable("tbl_icd10_dictionary");
         modelBuilder.Entity<DoctorSpecialization>().ToTable("m2m_doctor_specialization");
         modelBuilder.Entity<RecordDiagnosis>().ToTable("m2m_record_diagnosis");
-        
     }
 }
 

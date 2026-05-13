@@ -9,7 +9,7 @@ public static class WebAppMigrations
     public static async Task Migrations(this WebApplication app)
     {
         // return;
-        
+
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
@@ -19,11 +19,12 @@ public static class WebAppMigrations
                 var passwordHasher = services.GetRequiredService<IPasswordHasher>();
 
                 await context.Database.MigrateAsync();
+
                 await ClinicDbSeeder.SeedSpecializationsAsync(context);
                 await ClinicDbSeeder.SeedAppointmentTypesAsync(context);
                 await ClinicDbSeeder.SeedOfficesAndDoctorsAsync(context, passwordHasher);
                 await ClinicDbSeeder.SeedAdminAsync(context, passwordHasher);
-                
+                await ClinicDbSeeder.SeedRegistrarsAsync(context, passwordHasher);
             }
             catch (Exception ex)
             {
@@ -31,6 +32,5 @@ public static class WebAppMigrations
                 logger.LogError(ex, "Ошибка при инициализации базы данных.");
             }
         }
-        
     }
 }

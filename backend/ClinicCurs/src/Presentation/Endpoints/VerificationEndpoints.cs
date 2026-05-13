@@ -72,7 +72,30 @@ public static class VerificationEndpoints
                     ? Results.Ok(new { Message = "Заявка успешно обработана." }) 
                     : Results.BadRequest(new { error = result.ErrorMessage });
             })
-            .RequireAuthorization("StaffOnly"); // Политика из AuthExtensions
+            .RequireAuthorization("StaffOnly"); 
+        
+        group.MapGet("/my", async (ClaimsPrincipal user, IGenericRepository<VerificationRequest> requestRepo) =>
+        {
+            var accountIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(accountIdStr, out var accountId)) return Results.Unauthorized();
+
+            var request = await requestRepo.FirstOrDefaultAsync(r => r.AccountId == accountId && 
+                                                                     (r.Status == VerificationStatuses.wait || r.Status == VerificationStatuses.verified));
+    
+            return request != null ? Results.Ok(request) : Results.NotFound();
+        }).RequireAuthorization("PatientOnly");
+
+        group.MapPut("/my", async ([FromBody] SubmitVerificationDto dto, ClaimsPrincipal user, IMediator mediator) =>
+        {
+            var accountIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(accountIdStr, out var accountId)) return Results.Unauthorized();
+
+            var command = new UpdateVerificationRequestCommand(accountId, dto.FirstName, dto.LastName, dto.MiddleName, 
+                dto.BirthDate, dto.PassportSeriesNumber, dto.PersonalNumber, dto.OfficeId, dto.ScheduledAt);
+
+            var result = await mediator.Send(command);
+            return result.IsSuccess ? Results.Ok() : Results.BadRequest(new { error = result.ErrorMessage });
+        }).RequireAuthorization("PatientOnly");
     }
 }
 

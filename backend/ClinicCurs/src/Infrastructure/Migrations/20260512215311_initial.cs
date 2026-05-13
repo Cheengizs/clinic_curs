@@ -33,7 +33,7 @@ namespace Infrastructure.Migrations
                     phone = table.Column<string>(type: "text", nullable: true),
                     email_verified = table.Column<bool>(type: "boolean", nullable: false),
                     phone_verified = table.Column<bool>(type: "boolean", nullable: false),
-                    last_phone_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    last_phone_update = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     identity_verified = table.Column<bool>(type: "boolean", nullable: false),
                     role = table.Column<int>(type: "integer", nullable: false),
                     is_deleted = table.Column<bool>(type: "boolean", nullable: false)
@@ -121,7 +121,7 @@ namespace Infrastructure.Migrations
                     first_name = table.Column<string>(type: "text", nullable: false),
                     last_name = table.Column<string>(type: "text", nullable: false),
                     middle_name = table.Column<string>(type: "text", nullable: true),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -141,9 +141,9 @@ namespace Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     token_hash = table.Column<string>(type: "text", nullable: false),
-                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     is_used = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -171,7 +171,7 @@ namespace Infrastructure.Migrations
                     personal_number = table.Column<string>(type: "text", nullable: false),
                     residential_address = table.Column<string>(type: "text", nullable: false),
                     avatar_url = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -191,9 +191,9 @@ namespace Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     token = table.Column<string>(type: "text", nullable: false),
-                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     is_revoked = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -283,8 +283,8 @@ namespace Infrastructure.Migrations
                     rhesus_factor = table.Column<int>(type: "integer", nullable: false),
                     chronic_diseases = table.Column<string>(type: "text", nullable: false),
                     allergies = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()"),
+                    updated_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -362,10 +362,10 @@ namespace Infrastructure.Migrations
                     type_id = table.Column<Guid>(type: "uuid", nullable: false),
                     doctor_id = table.Column<Guid>(type: "uuid", nullable: true),
                     registrar_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    scheduled_start = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    scheduled_end = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    scheduled_start = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    scheduled_end = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -413,11 +413,11 @@ namespace Infrastructure.Migrations
                     passport_series_number = table.Column<string>(type: "text", nullable: false),
                     personal_number = table.Column<string>(type: "text", nullable: false),
                     office_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    scheduled_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    scheduled_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
                     registrar_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    processed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    processed_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -447,7 +447,7 @@ namespace Infrastructure.Migrations
                     objective_data = table.Column<string>(type: "text", nullable: false),
                     assessment = table.Column<string>(type: "text", nullable: false),
                     plan = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()"),
                     medical_card_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
@@ -483,7 +483,7 @@ namespace Infrastructure.Migrations
                     appointment_id = table.Column<Guid>(type: "uuid", nullable: false),
                     rating = table.Column<int>(type: "integer", nullable: false),
                     comment = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -544,7 +544,7 @@ namespace Infrastructure.Migrations
                     details = table.Column<string>(type: "text", nullable: false),
                     duration_days = table.Column<int>(type: "integer", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -568,7 +568,7 @@ namespace Infrastructure.Migrations
                     office_id = table.Column<Guid>(type: "uuid", nullable: false),
                     result_file_url = table.Column<string>(type: "text", nullable: false),
                     status = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()"),
                     medical_card_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>

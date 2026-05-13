@@ -40,5 +40,6 @@ app.MapFilesEndpoints();
 app.MapSystemEndpoints();
 app.MapClinicEndpoints();
 app.MapAdminEndpoints();
+app.MapAppointmentEndpoints();
 
 app.Run();

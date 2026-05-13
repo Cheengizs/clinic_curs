@@ -26,7 +26,9 @@ public class ConfirmPhoneCodeHandler : IRequestHandler<ConfirmPhoneCodeCommand, 
         if (account == null) 
             return new ConfirmPhoneCodeResult(false, "Аккаунт не найден.");
 
-        if (account.PhoneVerified)
+        var pendingPhone = await _cache.GetStringAsync($"pending_phone_{request.AccountId}", cancellationToken);
+    
+        if (string.IsNullOrEmpty(pendingPhone) && account.PhoneVerified)
             return new ConfirmPhoneCodeResult(false, "Ваш номер телефона уже был подтвержден ранее.");
 
         var cacheKey = $"phone_verify_code_{request.AccountId}";
@@ -38,30 +40,20 @@ public class ConfirmPhoneCodeHandler : IRequestHandler<ConfirmPhoneCodeCommand, 
         if (storedCode != request.Code)
             return new ConfirmPhoneCodeResult(false, "Введен неверный код подтверждения.");
 
-        var pendingPhone = await _cache.GetStringAsync($"pending_phone_{request.AccountId}", cancellationToken);
-
         if (!string.IsNullOrEmpty(pendingPhone))
         {
-            // НОВАЯ ПРОВЕРКА (Защита от состояния гонки): 
-            // Проверяем, не успел ли кто-то другой подтвердить этот номер, пока мы вводили код
-            bool isPhoneTaken = await _accountRepo.AnyAsync(a => a.Phone == pendingPhone && a.PhoneVerified && a.Id != request.AccountId);
-            if (isPhoneTaken)
-            {
-                return new ConfirmPhoneCodeResult(false, "К сожалению, этот номер уже был привязан к другому аккаунту.");
-            }
-
             account.Phone = pendingPhone;
         }
 
         account.PhoneVerified = true;
         account.LastPhoneUpdate = DateTime.UtcNow;
-        
+    
         _accountRepo.Update(account);
         await _accountRepo.SaveChangesAsync();
 
         await _cache.RemoveAsync(cacheKey, cancellationToken);
         await _cache.RemoveAsync($"pending_phone_{request.AccountId}", cancellationToken);
-        
+    
         return new ConfirmPhoneCodeResult(true, null);
     }
 }

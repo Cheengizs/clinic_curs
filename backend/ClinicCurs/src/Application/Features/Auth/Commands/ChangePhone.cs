@@ -50,6 +50,10 @@ public class RequestPhoneChangeHandler : IRequestHandler<RequestPhoneChangeComma
         await _cache.SetStringAsync($"phone_verify_code_{request.AccountId}", code, cacheOptions, cancellationToken);
         await _cache.SetStringAsync($"pending_phone_{request.AccountId}", request.NewPhone, cacheOptions, cancellationToken);
 
+        account.PhoneVerified = false; 
+        _accountRepo.Update(account);
+        await _accountRepo.SaveChangesAsync();
+        
         await _smsService.SendVerificationCodeAsync(request.NewPhone, code);
 
         return new ChangePhoneResult(true, null);
