@@ -180,12 +180,13 @@ public static class ClinicDbSeeder
             await context.SaveChangesAsync();
         }
     }
+
     public static async Task SeedRegistrarsAsync(ClinicDbContext context, IPasswordHasher hasher)
     {
         if (!await context.Accounts.AnyAsync(a => a.Role == RoleType.registrar))
         {
             var office = await context.Offices.FirstOrDefaultAsync();
-            if (office == null) return; 
+            if (office == null) return;
 
             var regAccount = new Account
             {
@@ -199,7 +200,7 @@ public static class ClinicDbSeeder
             };
 
             await context.Accounts.AddAsync(regAccount);
-            await context.SaveChangesAsync(); 
+            await context.SaveChangesAsync();
 
             var registrar = new Registrar
             {
@@ -214,6 +215,35 @@ public static class ClinicDbSeeder
             };
 
             await context.Registrars.AddAsync(registrar);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public static async Task SeedLabTestsAsync(ClinicDbContext context)
+    {
+        if (!await context.LabTestsDictionaries.AnyAsync())
+        {
+            await context.LabTestsDictionaries.AddRangeAsync(
+                new LabTestsDictionary
+                {
+                    Id = Guid.NewGuid(), Name = "Общий анализ крови (ОАК)", Description = "Базовое исследование крови"
+                },
+                new LabTestsDictionary
+                {
+                    Id = Guid.NewGuid(), Name = "Общий анализ мочи (ОАМ)", Description = "Базовое исследование мочи"
+                },
+                new LabTestsDictionary
+                {
+                    Id = Guid.NewGuid(), Name = "Биохимический анализ крови",
+                    Description = "Развернутое исследование крови"
+                },
+                new LabTestsDictionary
+                    { Id = Guid.NewGuid(), Name = "Рентген грудной клетки", Description = "Снимок легких" },
+                new LabTestsDictionary
+                {
+                    Id = Guid.NewGuid(), Name = "МРТ головного мозга", Description = "Магнитно-резонансная томография"
+                }
+            );
             await context.SaveChangesAsync();
         }
     }

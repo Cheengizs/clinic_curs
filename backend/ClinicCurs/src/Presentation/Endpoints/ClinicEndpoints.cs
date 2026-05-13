@@ -1,4 +1,5 @@
-﻿using Application.Features.Clinic.Queries;
+﻿using System.Security.Claims;
+using Application.Features.Clinic.Queries;
 using Application.Interfaces.Repositories;
 using Domain.Models;
 using MediatR;
@@ -34,6 +35,15 @@ public static class ClinicEndpoints
             var result = await mediator.Send(new GetDoctorsQuery(officeId, specializationId, pageNumber, pageSize));
             return Results.Ok(result);
         });
+        
+        group.MapGet("/my-history", async (ClaimsPrincipal user, IMediator mediator) =>
+        {
+            var accountIdStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(accountIdStr, out var accountId)) return Results.Unauthorized();
+
+            var history = await mediator.Send(new GetMedicalHistoryQuery(accountId));
+            return Results.Ok(history);
+        }).RequireAuthorization("PatientOnly");
         
         group.MapGet("/appointment-types", async (IGenericRepository<AppointmentType> repo) =>
         {

@@ -39,7 +39,7 @@ public static class AuthExtensions
                 policy.RequireRole("admin"));
             
             options.AddPolicy("StaffOnly", policy => 
-                policy.RequireRole("admin", "registrar"));
+                policy.RequireRole("admin", "registrar", "doctor"));
             
             options.AddPolicy("DoctorOnly", policy => 
                 policy.RequireRole("doctor"));

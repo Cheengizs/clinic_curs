@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
 using Presentation.Endpoints;
@@ -8,6 +9,11 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
@@ -41,5 +47,6 @@ app.MapSystemEndpoints();
 app.MapClinicEndpoints();
 app.MapAdminEndpoints();
 app.MapAppointmentEndpoints();
+app.MapLabEndpoints();
 
 app.Run();

@@ -11,7 +11,8 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialData?: VerificationRequestDto | null; // Данные для редактирования
+  initialData?: VerificationRequestDto | null;
+  isStaffMode?: boolean;
 }
 
 export default function VerificationModal({
@@ -19,6 +20,7 @@ export default function VerificationModal({
   onClose,
   onSuccess,
   initialData,
+  isStaffMode,
 }: Props) {
   const [offices, setOffices] = useState<OfficeDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,8 +31,10 @@ export default function VerificationModal({
     lastName: "",
     middleName: "",
     birthDate: "",
+    gender: "male",
     passportSeriesNumber: "",
     personalNumber: "",
+    residentialAddress: "",
     officeId: "",
     scheduledAt: "",
   });
@@ -40,30 +44,31 @@ export default function VerificationModal({
       clinicApi.getOffices().then(setOffices);
 
       if (initialData) {
-        // Предзаполняем форму данными из существующей заявки
         setForm({
           firstName: initialData.firstName,
           lastName: initialData.lastName,
           middleName: initialData.middleName || "",
           birthDate: initialData.birthDate,
+          gender: initialData.gender,
           passportSeriesNumber: initialData.passportSeriesNumber,
           personalNumber: initialData.personalNumber,
+          residentialAddress: initialData.residentialAddress,
           officeId: initialData.officeId,
-          // Форматируем дату для инпута datetime-local (YYYY-MM-DDTHH:mm)
           scheduledAt: new Date(initialData.scheduledAt)
             .toLocaleString("sv-SE")
             .replace(" ", "T")
             .slice(0, 16),
         });
       } else {
-        // Сбрасываем форму для новой записи
         setForm({
           firstName: "",
           lastName: "",
           middleName: "",
           birthDate: "",
+          gender: "male",
           passportSeriesNumber: "",
           personalNumber: "",
+          residentialAddress: "",
           officeId: "",
           scheduledAt: "",
         });
@@ -84,9 +89,12 @@ export default function VerificationModal({
     };
 
     try {
-      if (initialData) {
+      if (isStaffMode && initialData) {
+        await verificationApi.editRequestByStaff(initialData.id, dataToSend);
+        alert("Заявка успешно отредактирована регистратором!");
+      } else if (initialData) {
         await verificationApi.updateRequest(dataToSend);
-        alert("Заявка успешно обновлена!");
+        alert("Ваша заявка успешно обновлена!");
       } else {
         await verificationApi.submitRequest(dataToSend);
         alert("Заявка успешно создана!");
@@ -102,11 +110,15 @@ export default function VerificationModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="p-8 md:p-12">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-black text-slate-900">
-              {initialData ? "Редактирование записи" : "Запись на верификацию"}
+              {isStaffMode
+                ? "Редактирование заявки (Персонал)"
+                : initialData
+                  ? "Редактирование записи"
+                  : "Запись на верификацию"}
             </h2>
             <button
               onClick={onClose}
@@ -131,7 +143,6 @@ export default function VerificationModal({
                 Личные данные
               </h3>
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-slate-700 ml-1">
                 Фамилия
@@ -163,7 +174,6 @@ export default function VerificationModal({
                 Отчество
               </label>
               <input
-                required
                 type="text"
                 className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.middleName}
@@ -183,6 +193,40 @@ export default function VerificationModal({
                 value={form.birthDate}
                 onChange={(e) =>
                   setForm({ ...form, birthDate: e.target.value })
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-slate-700 ml-1">
+                Пол
+              </label>
+              <select
+                required
+                className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                value={form.gender}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    gender: e.target.value as "male" | "female",
+                  })
+                }
+              >
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-slate-700 ml-1">
+                Адрес проживания
+              </label>
+              <input
+                required
+                type="text"
+                placeholder="Город, улица, дом, квартира"
+                className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                value={form.residentialAddress}
+                onChange={(e) =>
+                  setForm({ ...form, residentialAddress: e.target.value })
                 }
               />
             </div>
@@ -214,7 +258,7 @@ export default function VerificationModal({
               <input
                 required
                 type="text"
-                placeholder="14 цифр"
+                placeholder="14 символов"
                 className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.personalNumber}
                 onChange={(e) =>
@@ -234,7 +278,7 @@ export default function VerificationModal({
               </label>
               <select
                 required
-                className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 value={form.officeId}
                 onChange={(e) => setForm({ ...form, officeId: e.target.value })}
               >
@@ -253,7 +297,7 @@ export default function VerificationModal({
               <input
                 required
                 type="datetime-local"
-                className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 value={form.scheduledAt}
                 onChange={(e) =>
                   setForm({ ...form, scheduledAt: e.target.value })
@@ -266,11 +310,7 @@ export default function VerificationModal({
               type="submit"
               className="md:col-span-2 mt-8 w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-200"
             >
-              {loading
-                ? "Сохранение..."
-                : initialData
-                  ? "Обновить данные"
-                  : "Отправить заявку"}
+              {loading ? "Сохранение..." : "Сохранить изменения"}
             </button>
           </form>
         </div>

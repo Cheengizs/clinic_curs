@@ -53,4 +53,12 @@ export const adminApi = {
     const response = await axiosInstance.post("/admin/schedules", data);
     return response.data;
   },
+  getPatients: async () => {
+    const response = await axiosInstance.get<any[]>("/admin/patients");
+    return response.data;
+  },
+  deletePatient: async (accountId: string) => {
+    const response = await axiosInstance.delete(`/admin/patients/${accountId}`);
+    return response.data;
+  },
 };

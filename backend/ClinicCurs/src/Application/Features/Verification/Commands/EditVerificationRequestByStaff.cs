@@ -5,8 +5,8 @@ using MediatR;
 
 namespace Application.Features.Verification.Commands;
 
-public record UpdateVerificationRequestCommand(
-    Guid AccountId,
+public record EditVerificationRequestByStaffCommand(
+    Guid RequestId,
     string FirstName,
     string LastName,
     string MiddleName,
@@ -19,16 +19,17 @@ public record UpdateVerificationRequestCommand(
     DateTime ScheduledAt
 ) : IRequest<SubmitVerificationResult>;
 
-public class UpdateVerificationRequestHandler : IRequestHandler<UpdateVerificationRequestCommand, SubmitVerificationResult>
+public class EditVerificationRequestByStaffHandler : IRequestHandler<EditVerificationRequestByStaffCommand, SubmitVerificationResult>
 {
     private readonly IGenericRepository<VerificationRequest> _requestRepo;
 
-    public UpdateVerificationRequestHandler(IGenericRepository<VerificationRequest> requestRepo) => _requestRepo = requestRepo;
+    public EditVerificationRequestByStaffHandler(IGenericRepository<VerificationRequest> requestRepo) => _requestRepo = requestRepo;
 
-    public async Task<SubmitVerificationResult> Handle(UpdateVerificationRequestCommand request, CancellationToken cancellationToken)
+    public async Task<SubmitVerificationResult> Handle(EditVerificationRequestByStaffCommand request, CancellationToken cancellationToken)
     {
-        var existing = await _requestRepo.FirstOrDefaultAsync(r => r.AccountId == request.AccountId && r.Status == VerificationStatuses.wait);
-        if (existing == null) return new SubmitVerificationResult(false, "Заявка не найдена или уже обработана.");
+        var existing = await _requestRepo.GetByIdAsync(request.RequestId);
+        if (existing == null || existing.Status != VerificationStatuses.wait)
+            return new SubmitVerificationResult(false, "Заявка не найдена или уже была обработана.");
 
         existing.FirstName = request.FirstName;
         existing.LastName = request.LastName;
@@ -43,6 +44,7 @@ public class UpdateVerificationRequestHandler : IRequestHandler<UpdateVerificati
 
         _requestRepo.Update(existing);
         await _requestRepo.SaveChangesAsync();
+        
         return new SubmitVerificationResult(true, null);
     }
 }

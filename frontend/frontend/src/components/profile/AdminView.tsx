@@ -1,26 +1,22 @@
 import { useState, useEffect } from "react";
-import {
-  adminApi,
-  type RegisterRegistrarDto,
-  type RegisterDoctorDto,
-} from "../../api/adminApi";
+import { adminApi } from "../../api/adminApi";
 import { clinicApi } from "../../api/clinicApi";
 import type { OfficeDto } from "../../types/clinic";
 import { getErrorMessage } from "../../utils/errorHandler";
 
-type Tab = "offices" | "specializations" | "staff" | "schedules";
+type Tab = "offices" | "specializations" | "staff" | "schedules" | "patients";
 type StaffRole = "registrar" | "doctor";
 
 export default function AdminView() {
   const [activeTab, setActiveTab] = useState<Tab>("offices");
   const [loading, setLoading] = useState(false);
-
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
   const [offices, setOffices] = useState<OfficeDto[]>([]);
   const [specializations, setSpecializations] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
 
   const [officeForm, setOfficeForm] = useState({
     name: "",
@@ -28,7 +24,6 @@ export default function AdminView() {
     phone: "",
   });
   const [specForm, setSpecForm] = useState({ name: "", description: "" });
-
   const [scheduleForm, setScheduleForm] = useState({
     doctorId: "",
     workDate: "",
@@ -58,12 +53,18 @@ export default function AdminView() {
     clearMessages();
     if (activeTab === "staff") {
       clinicApi.getOffices().then(setOffices);
-      fetch("http://localhost:5133/api/clinic/specializations")
-        .then((res) => res.json())
-        .then(setSpecializations);
+      clinicApi.getSpecializations().then(setSpecializations);
     }
     if (activeTab === "schedules") {
       clinicApi.getDoctors(1, 50).then((data) => setDoctors(data.items));
+    }
+    if (activeTab === "patients") {
+      setLoading(true);
+      adminApi
+        .getPatients()
+        .then(setPatients)
+        .catch(() => setPatients([]))
+        .finally(() => setLoading(false));
     }
   }, [activeTab]);
 
@@ -107,7 +108,6 @@ export default function AdminView() {
       setLoading(false);
       return;
     }
-
     try {
       await adminApi.createSchedule({
         doctorId: doc.id,
@@ -125,24 +125,11 @@ export default function AdminView() {
     }
   };
 
-  const addSpec = () =>
-    setDoctorSpecs([
-      ...doctorSpecs,
-      { specializationId: "", isPrimary: false, careerStartDate: "" },
-    ]);
-  const removeSpec = (index: number) =>
-    setDoctorSpecs(doctorSpecs.filter((_, i) => i !== index));
-  const updateSpec = (index: number, field: string, value: any) => {
-    const newSpecs = [...doctorSpecs];
-    (newSpecs[index] as any)[field] = value;
-    setDoctorSpecs(newSpecs);
-  };
-
   const handleRegisterStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     clearMessages();
     if (staffRole === "doctor" && doctorSpecs.length === 0) {
-      setErrorMsg("Необходимо указать хотя бы одну специализацию для врача.");
+      setErrorMsg("Укажите специализацию");
       return;
     }
     setLoading(true);
@@ -183,87 +170,94 @@ export default function AdminView() {
     }
   };
 
+  const handleDeletePatient = async (accountId: string) => {
+    if (
+      window.confirm(
+        "Удалить пациента? Данные будут анонимизированы, а записи отменены.",
+      )
+    ) {
+      try {
+        await adminApi.deletePatient(accountId);
+        setSuccessMsg("Пациент успешно удален (анонимизирован).");
+        adminApi.getPatients().then(setPatients);
+      } catch (err: any) {
+        setErrorMsg(getErrorMessage(err));
+      }
+    }
+  };
+
+  const addSpec = () =>
+    setDoctorSpecs([
+      ...doctorSpecs,
+      { specializationId: "", isPrimary: false, careerStartDate: "" },
+    ]);
+  const removeSpec = (index: number) =>
+    setDoctorSpecs(doctorSpecs.filter((_, i) => i !== index));
+  const updateSpec = (index: number, field: string, value: any) => {
+    const newSpecs = [...doctorSpecs];
+    (newSpecs[index] as any)[field] = value;
+    setDoctorSpecs(newSpecs);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex gap-4 border-b border-slate-200 pb-4 overflow-x-auto">
         <button
           onClick={() => setActiveTab("offices")}
-          className={`px-6 py-2.5 rounded-full font-bold transition-all whitespace-nowrap ${activeTab === "offices" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 hover:bg-slate-100"}`}
+          className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap ${activeTab === "offices" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500"}`}
         >
           🏥 Офисы
         </button>
         <button
           onClick={() => setActiveTab("specializations")}
-          className={`px-6 py-2.5 rounded-full font-bold transition-all whitespace-nowrap ${activeTab === "specializations" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 hover:bg-slate-100"}`}
+          className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap ${activeTab === "specializations" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500"}`}
         >
           ⚕️ Специализации
         </button>
         <button
           onClick={() => setActiveTab("staff")}
-          className={`px-6 py-2.5 rounded-full font-bold transition-all whitespace-nowrap ${activeTab === "staff" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 hover:bg-slate-100"}`}
+          className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap ${activeTab === "staff" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500"}`}
         >
           👥 Сотрудники
         </button>
         <button
           onClick={() => setActiveTab("schedules")}
-          className={`px-6 py-2.5 rounded-full font-bold transition-all whitespace-nowrap ${activeTab === "schedules" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 hover:bg-slate-100"}`}
+          className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap ${activeTab === "schedules" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500"}`}
         >
           📅 Расписание
+        </button>
+        <button
+          onClick={() => setActiveTab("patients")}
+          className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap ${activeTab === "patients" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500"}`}
+        >
+          👥 База пациентов
         </button>
       </div>
 
       {errorMsg && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 font-medium flex items-start gap-3">
-          <svg
-            className="w-6 h-6 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            ></path>
-          </svg>
-          <p>{errorMsg}</p>
+        <div className="bg-red-50 text-red-600 p-4 rounded-2xl border font-medium">
+          {errorMsg}
         </div>
       )}
       {successMsg && (
-        <div className="bg-green-50 text-green-700 p-4 rounded-2xl border border-green-200 font-medium flex items-start gap-3">
-          <svg
-            className="w-6 h-6 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            ></path>
-          </svg>
-          <p className="whitespace-pre-line leading-relaxed">{successMsg}</p>
+        <div className="bg-green-50 text-green-700 p-4 rounded-2xl border font-medium whitespace-pre-line">
+          {successMsg}
         </div>
       )}
 
       {activeTab === "offices" && (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-xl">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Добавить новый филиал
-          </h2>
+        <div className="bg-white p-8 rounded-[2rem] border shadow-sm max-w-xl">
+          <h2 className="text-2xl font-bold mb-6">Добавить новый филиал</h2>
           <form onSubmit={handleCreateOffice} className="space-y-4">
             <input
               required
               type="text"
-              placeholder="Название (например: Главный корпус)"
+              placeholder="Название"
               value={officeForm.name}
               onChange={(e) =>
                 setOfficeForm({ ...officeForm, name: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <input
               required
@@ -273,22 +267,22 @@ export default function AdminView() {
               onChange={(e) =>
                 setOfficeForm({ ...officeForm, address: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <input
               required
               type="text"
-              placeholder="Контактный телефон"
+              placeholder="Телефон"
               value={officeForm.phone}
               onChange={(e) =>
                 setOfficeForm({ ...officeForm, phone: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <button
               disabled={loading}
               type="submit"
-              className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 w-full shadow-lg shadow-blue-200 transition-all"
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold"
             >
               Добавить офис
             </button>
@@ -297,35 +291,33 @@ export default function AdminView() {
       )}
 
       {activeTab === "specializations" && (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-xl">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Добавить специализацию
-          </h2>
+        <div className="bg-white p-8 rounded-[2rem] border shadow-sm max-w-xl">
+          <h2 className="text-2xl font-bold mb-6">Добавить специализацию</h2>
           <form onSubmit={handleCreateSpec} className="space-y-4">
             <input
               required
               type="text"
-              placeholder="Название (например: Кардиолог)"
+              placeholder="Название"
               value={specForm.name}
               onChange={(e) =>
                 setSpecForm({ ...specForm, name: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <textarea
               required
-              placeholder="Краткое описание"
+              placeholder="Описание"
               value={specForm.description}
               onChange={(e) =>
                 setSpecForm({ ...specForm, description: e.target.value })
               }
               rows={3}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-4 py-3 bg-slate-50 border rounded-xl resize-none"
             />
             <button
               disabled={loading}
               type="submit"
-              className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 w-full shadow-lg shadow-blue-200 transition-all"
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold"
             >
               Добавить специализацию
             </button>
@@ -334,27 +326,24 @@ export default function AdminView() {
       )}
 
       {activeTab === "staff" && (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-3xl">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">
-              Регистрация сотрудника
-            </h2>
+        <div className="bg-white p-8 rounded-[2rem] border shadow-sm max-w-3xl">
+          <div className="flex justify-between mb-6">
+            <h2 className="text-2xl font-bold">Регистрация сотрудника</h2>
             <select
               value={staffRole}
               onChange={(e) => {
                 setStaffRole(e.target.value as StaffRole);
                 clearMessages();
               }}
-              className="px-4 py-2 bg-slate-100 rounded-lg font-bold text-slate-700 outline-none cursor-pointer"
+              className="bg-slate-100 px-4 py-2 rounded-lg font-bold"
             >
               <option value="registrar">Регистратор</option>
               <option value="doctor">Врач</option>
             </select>
           </div>
-
           <form
             onSubmit={handleRegisterStaff}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            className="grid grid-cols-2 gap-4"
           >
             <input
               required
@@ -364,7 +353,7 @@ export default function AdminView() {
               onChange={(e) =>
                 setStaffForm({ ...staffForm, lastName: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <input
               required
@@ -374,7 +363,7 @@ export default function AdminView() {
               onChange={(e) =>
                 setStaffForm({ ...staffForm, firstName: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <input
               type="text"
@@ -383,7 +372,7 @@ export default function AdminView() {
               onChange={(e) =>
                 setStaffForm({ ...staffForm, middleName: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <input
               required
@@ -393,7 +382,7 @@ export default function AdminView() {
               onChange={(e) =>
                 setStaffForm({ ...staffForm, phone: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 bg-slate-50 border rounded-xl"
             />
             <select
               required
@@ -401,47 +390,31 @@ export default function AdminView() {
               onChange={(e) =>
                 setStaffForm({ ...staffForm, officeId: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 md:col-span-2 cursor-pointer"
+              className="col-span-2 px-4 py-3 bg-slate-50 border rounded-xl"
             >
               <option value="">-- Выберите офис --</option>
               {offices.map((o) => (
                 <option key={o.id} value={o.id}>
-                  {o.name} ({o.address})
+                  {o.name}
                 </option>
               ))}
             </select>
-
             {staffRole === "doctor" && (
-              <div className="md:col-span-2 space-y-3 bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-slate-700">
-                    Специализации врача
-                  </h3>
+              <div className="col-span-2 space-y-3 bg-slate-50 p-6 rounded-2xl border">
+                <div className="flex justify-between">
+                  <h3 className="font-bold">Специализации</h3>
                   <button
                     type="button"
                     onClick={addSpec}
-                    className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                    className="text-blue-600 font-bold"
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      ></path>
-                    </svg>{" "}
                     Добавить
                   </button>
                 </div>
                 {doctorSpecs.map((spec, index) => (
                   <div
                     key={index}
-                    className="flex flex-col sm:flex-row gap-3 items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative"
+                    className="flex gap-3 items-center bg-white p-3 rounded-xl border"
                   >
                     <select
                       required
@@ -449,9 +422,9 @@ export default function AdminView() {
                       onChange={(e) =>
                         updateSpec(index, "specializationId", e.target.value)
                       }
-                      className="w-full sm:w-1/2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      className="w-1/2 p-2 border rounded-lg"
                     >
-                      <option value="">-- Выберите специальность --</option>
+                      <option value="">Специальность</option>
                       {specializations.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name}
@@ -465,156 +438,163 @@ export default function AdminView() {
                       onChange={(e) =>
                         updateSpec(index, "careerStartDate", e.target.value)
                       }
-                      title="Дата начала карьеры"
-                      className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      className="p-2 border rounded-lg"
                     />
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer whitespace-nowrap">
+                    <label className="flex items-center gap-1 text-sm">
                       <input
                         type="checkbox"
                         checked={spec.isPrimary}
                         onChange={(e) =>
                           updateSpec(index, "isPrimary", e.target.checked)
                         }
-                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
                       />{" "}
-                      Основная
+                      Осн.
                     </label>
                     {index > 0 && (
                       <button
                         type="button"
                         onClick={() => removeSpec(index)}
-                        className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-lg hover:bg-red-100 sm:ml-auto transition-colors"
-                        title="Удалить"
+                        className="text-red-500 font-bold ml-auto"
                       >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          ></path>
-                        </svg>
+                        X
                       </button>
                     )}
                   </div>
                 ))}
+                <textarea
+                  required
+                  placeholder="Биография"
+                  value={staffForm.bio}
+                  onChange={(e) =>
+                    setStaffForm({ ...staffForm, bio: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-4 py-3 border rounded-xl mt-3"
+                />
               </div>
-            )}
-            {staffRole === "doctor" && (
-              <textarea
-                required
-                placeholder="Биография (описание опыта для пациентов)"
-                value={staffForm.bio}
-                onChange={(e) =>
-                  setStaffForm({ ...staffForm, bio: e.target.value })
-                }
-                rows={3}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none md:col-span-2"
-              />
             )}
             <button
               disabled={loading}
               type="submit"
-              className="mt-4 md:col-span-2 bg-blue-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-blue-700 transition-all text-lg shadow-lg shadow-blue-200"
+              className="col-span-2 bg-blue-600 text-white py-4 rounded-xl font-bold mt-4"
             >
-              {loading
-                ? "Регистрация..."
-                : `Зарегистрировать ${staffRole === "doctor" ? "врача" : "регистратора"}`}
+              Зарегистрировать
             </button>
           </form>
         </div>
       )}
 
-      {/* ВКЛАДКА 4: РАСПИСАНИЕ */}
       {activeTab === "schedules" && (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-xl">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Назначить смену
-          </h2>
+        <div className="bg-white p-8 rounded-[2rem] border shadow-sm max-w-xl">
+          <h2 className="text-2xl font-bold mb-6">Назначить смену</h2>
           <form onSubmit={handleCreateSchedule} className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-slate-700 ml-1">
-                Врач
-              </label>
-              <select
-                required
-                value={scheduleForm.doctorId}
-                onChange={(e) =>
-                  setScheduleForm({ ...scheduleForm, doctorId: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="">-- Выберите врача --</option>
-                {doctors.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.lastName} {d.firstName} ({d.specializations[0]?.name})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-slate-700 ml-1">
-                Дата смены
-              </label>
+            <select
+              required
+              value={scheduleForm.doctorId}
+              onChange={(e) =>
+                setScheduleForm({ ...scheduleForm, doctorId: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-slate-50 border rounded-xl"
+            >
+              <option value="">-- Врач --</option>
+              {doctors.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.lastName} {d.firstName}
+                </option>
+              ))}
+            </select>
+            <input
+              required
+              type="date"
+              value={scheduleForm.workDate}
+              onChange={(e) =>
+                setScheduleForm({ ...scheduleForm, workDate: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-slate-50 border rounded-xl"
+            />
+            <div className="grid grid-cols-2 gap-4">
               <input
                 required
-                type="date"
-                value={scheduleForm.workDate}
+                type="time"
+                value={scheduleForm.startTime}
                 onChange={(e) =>
-                  setScheduleForm({ ...scheduleForm, workDate: e.target.value })
+                  setScheduleForm({
+                    ...scheduleForm,
+                    startTime: e.target.value,
+                  })
                 }
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-3 bg-slate-50 border rounded-xl"
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-slate-700 ml-1">
-                  Начало
-                </label>
-                <input
-                  required
-                  type="time"
-                  value={scheduleForm.startTime}
-                  onChange={(e) =>
-                    setScheduleForm({
-                      ...scheduleForm,
-                      startTime: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-slate-700 ml-1">
-                  Конец
-                </label>
-                <input
-                  required
-                  type="time"
-                  value={scheduleForm.endTime}
-                  onChange={(e) =>
-                    setScheduleForm({
-                      ...scheduleForm,
-                      endTime: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <input
+                required
+                type="time"
+                value={scheduleForm.endTime}
+                onChange={(e) =>
+                  setScheduleForm({ ...scheduleForm, endTime: e.target.value })
+                }
+                className="px-4 py-3 bg-slate-50 border rounded-xl"
+              />
             </div>
             <button
               disabled={loading}
               type="submit"
-              className="mt-6 bg-blue-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-blue-700 w-full shadow-lg shadow-blue-200 transition-all text-lg"
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-2"
             >
-              {loading ? "Сохранение..." : "Назначить смену"}
+              Назначить смену
             </button>
           </form>
+        </div>
+      )}
+
+      {activeTab === "patients" && (
+        <div className="bg-white rounded-[2rem] border shadow-sm overflow-hidden">
+          <div className="p-8 border-b bg-slate-50/50">
+            <h2 className="text-2xl font-bold">Управление пациентами</h2>
+          </div>
+          {loading ? (
+            <div className="p-12 text-center text-slate-400">
+              Загрузка базы...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
+                  <tr>
+                    <th className="p-6">Пациент</th>
+                    <th className="p-6">Email</th>
+                    <th className="p-6">Паспорт</th>
+                    <th className="p-6 text-right">Управление</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {patients.map((p) => (
+                    <tr key={p.accountId} className="hover:bg-slate-50/50">
+                      <td className="p-6 font-bold">
+                        {p.lastName} {p.firstName}
+                      </td>
+                      <td className="p-6 text-sm text-slate-500">{p.email}</td>
+                      <td className="p-6 font-mono text-sm">
+                        {p.passportSeriesNumber}
+                      </td>
+                      <td className="p-6 text-right">
+                        <button
+                          onClick={() => handleDeletePatient(p.accountId)}
+                          className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-100"
+                        >
+                          Удалить
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {patients.length === 0 && (
+                <div className="p-12 text-center text-slate-400 italic">
+                  Пусто
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

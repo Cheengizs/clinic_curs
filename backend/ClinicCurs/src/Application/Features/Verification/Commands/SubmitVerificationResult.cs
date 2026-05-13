@@ -12,8 +12,10 @@ public record SubmitVerificationRequestCommand(
     string LastName,
     string MiddleName,
     DateOnly BirthDate,
+    Gender Gender, // <--
     string PassportSeriesNumber,
     string PersonalNumber,
+    string ResidentialAddress, // <--
     Guid OfficeId,          
     DateTime ScheduledAt    
 ) : IRequest<SubmitVerificationResult>;
@@ -27,7 +29,7 @@ public class SubmitVerificationRequestCommandHandler : IRequestHandler<SubmitVer
     public SubmitVerificationRequestCommandHandler(
         IGenericRepository<VerificationRequest> requestRepo,
         IGenericRepository<Account> accountRepo,
-        IGenericRepository<Office> officeRepo) // Инжектим репозиторий офисов
+        IGenericRepository<Office> officeRepo)
     {
         _requestRepo = requestRepo;
         _accountRepo = accountRepo;
@@ -37,31 +39,21 @@ public class SubmitVerificationRequestCommandHandler : IRequestHandler<SubmitVer
     public async Task<SubmitVerificationResult> Handle(SubmitVerificationRequestCommand request, CancellationToken cancellationToken)
     {
         var account = await _accountRepo.GetByIdAsync(request.AccountId);
-        if (account == null)
-            return new SubmitVerificationResult(false, "Аккаунт не найден.");
+        if (account == null) return new SubmitVerificationResult(false, "Аккаунт не найден.");
 
-        // ЖЕСТКАЯ ПРОВЕРКА: Подтверждены ли контакты?
         if (!account.EmailVerified || !account.PhoneVerified)
-        {
             return new SubmitVerificationResult(false, "Для записи на верификацию необходимо подтвердить Email и номер телефона.");
-        }
 
-        // ПРОВЕРКА: Существует ли офис?
         var office = await _officeRepo.GetByIdAsync(request.OfficeId);
         if (office == null || !office.IsActive)
-        {
             return new SubmitVerificationResult(false, "Выбранный офис не найден или неактивен.");
-        }
 
-        // ПРОВЕРКА: Нет ли уже активной заявки?
         var existingRequest = await _requestRepo.FirstOrDefaultAsync(
             r => r.AccountId == request.AccountId && 
                  (r.Status == VerificationStatuses.wait || r.Status == VerificationStatuses.verified));
 
         if (existingRequest != null)
-        {
             return new SubmitVerificationResult(false, "У вас уже есть ожидающая или одобренная заявка на верификацию.");
-        }
 
         var verificationReq = new VerificationRequest
         {
@@ -70,10 +62,12 @@ public class SubmitVerificationRequestCommandHandler : IRequestHandler<SubmitVer
             LastName = request.LastName,
             MiddleName = request.MiddleName,
             BirthDate = request.BirthDate,
+            Gender = request.Gender,
             PassportSeriesNumber = request.PassportSeriesNumber,
             PersonalNumber = request.PersonalNumber,
-            OfficeId = request.OfficeId,       // <-- Сохраняем офис
-            ScheduledAt = request.ScheduledAt, // <-- Сохраняем время
+            ResidentialAddress = request.ResidentialAddress,
+            OfficeId = request.OfficeId,
+            ScheduledAt = request.ScheduledAt,
             Status = VerificationStatuses.wait
         };
 

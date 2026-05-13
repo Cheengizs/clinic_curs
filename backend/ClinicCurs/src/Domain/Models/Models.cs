@@ -80,8 +80,14 @@ public class VerificationRequest
     public string FirstName { get; set; }
     public string MiddleName { get; set; }
     public DateOnly BirthDate { get; set; }
+    
+    public Gender Gender { get; set; } // <--- НОВОЕ ПОЛЕ
+    
     public string PassportSeriesNumber { get; set; }
     public string PersonalNumber { get; set; }
+    
+    public string ResidentialAddress { get; set; } // <--- НОВОЕ ПОЛЕ
+    
     public Guid OfficeId { get; set; }
     public DateTime ScheduledAt { get; set; }
     public VerificationStatuses Status { get; set; }
@@ -105,7 +111,7 @@ public class Patient
     public string PassportSeriesNumber { get; set; }
     public string PersonalNumber { get; set; }
     public string ResidentialAddress { get; set; }
-    public string AvatarUrl { get; set; }
+    public string AvatarUrl { get; set; } = "default_avatar.png";
     public DateTime CreatedAt { get; set; }
 
     public virtual Account Account { get; set; }

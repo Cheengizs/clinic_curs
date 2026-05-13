@@ -20,15 +20,9 @@ public static class VerificationEndpoints
                 if (!Guid.TryParse(accountIdStr, out var accountId)) return Results.Unauthorized();
 
                 var command = new SubmitVerificationRequestCommand(
-                    accountId,
-                    dto.FirstName,
-                    dto.LastName,
-                    dto.MiddleName,
-                    dto.BirthDate,
-                    dto.PassportSeriesNumber,
-                    dto.PersonalNumber,
-                    dto.OfficeId,       
-                    dto.ScheduledAt     
+                    accountId, dto.FirstName, dto.LastName, dto.MiddleName,
+                    dto.BirthDate, dto.Gender, dto.PassportSeriesNumber, dto.PersonalNumber,
+                    dto.ResidentialAddress, dto.OfficeId, dto.ScheduledAt     
                 );
 
                 var result = await mediator.Send(command);
@@ -45,14 +39,9 @@ public static class VerificationEndpoints
             
                 var response = pendingRequests.Select(r => new
                 {
-                    r.Id,
-                    r.FirstName,
-                    r.LastName,
-                    r.MiddleName,
-                    r.BirthDate,
-                    r.PassportSeriesNumber,
-                    r.PersonalNumber,
-                    r.CreatedAt
+                    r.Id, r.FirstName, r.LastName, r.MiddleName,
+                    r.BirthDate, r.Gender, r.PassportSeriesNumber, r.PersonalNumber,
+                    r.ResidentialAddress, r.OfficeId, r.ScheduledAt, r.CreatedAt
                 });
 
                 return Results.Ok(response);
@@ -65,7 +54,6 @@ public static class VerificationEndpoints
                 if (!Guid.TryParse(registrarAccountIdStr, out var registrarAccountId)) return Results.Unauthorized();
 
                 var command = new ProcessVerificationRequestCommand(requestId, registrarAccountId, dto.IsApproved);
-            
                 var result = await mediator.Send(command);
 
                 return result.IsSuccess 
@@ -74,6 +62,19 @@ public static class VerificationEndpoints
             })
             .RequireAuthorization("StaffOnly"); 
         
+        group.MapPut("/{requestId:guid}", async (Guid requestId, [FromBody] SubmitVerificationDto dto, ClaimsPrincipal user, IMediator mediator) =>
+            {
+                var command = new EditVerificationRequestByStaffCommand(
+                    requestId, dto.FirstName, dto.LastName, dto.MiddleName,
+                    dto.BirthDate, dto.Gender, dto.PassportSeriesNumber, dto.PersonalNumber,
+                    dto.ResidentialAddress, dto.OfficeId, dto.ScheduledAt
+                );
+
+                var result = await mediator.Send(command);
+                return result.IsSuccess ? Results.Ok() : Results.BadRequest(new { error = result.ErrorMessage });
+            })
+            .RequireAuthorization("StaffOnly");
+
         group.MapGet("/my", async (ClaimsPrincipal user, IGenericRepository<VerificationRequest> requestRepo) =>
         {
             var accountIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -81,7 +82,6 @@ public static class VerificationEndpoints
 
             var request = await requestRepo.FirstOrDefaultAsync(r => r.AccountId == accountId && 
                                                                      (r.Status == VerificationStatuses.wait || r.Status == VerificationStatuses.verified));
-    
             return request != null ? Results.Ok(request) : Results.NotFound();
         }).RequireAuthorization("PatientOnly");
 
@@ -91,7 +91,8 @@ public static class VerificationEndpoints
             if (!Guid.TryParse(accountIdStr, out var accountId)) return Results.Unauthorized();
 
             var command = new UpdateVerificationRequestCommand(accountId, dto.FirstName, dto.LastName, dto.MiddleName, 
-                dto.BirthDate, dto.PassportSeriesNumber, dto.PersonalNumber, dto.OfficeId, dto.ScheduledAt);
+                dto.BirthDate, dto.Gender, dto.PassportSeriesNumber, dto.PersonalNumber, 
+                dto.ResidentialAddress, dto.OfficeId, dto.ScheduledAt);
 
             var result = await mediator.Send(command);
             return result.IsSuccess ? Results.Ok() : Results.BadRequest(new { error = result.ErrorMessage });
@@ -106,8 +107,10 @@ public record SubmitVerificationDto(
     string LastName, 
     string MiddleName, 
     DateOnly BirthDate, 
+    Gender Gender, // <--
     string PassportSeriesNumber, 
     string PersonalNumber,
+    string ResidentialAddress, // <--
     Guid OfficeId,          
     DateTime ScheduledAt    
 );

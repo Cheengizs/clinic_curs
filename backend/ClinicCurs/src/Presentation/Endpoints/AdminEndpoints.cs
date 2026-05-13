@@ -1,8 +1,11 @@
-﻿using Application.Features.Admin.Commands;
+﻿using System.Security.Claims;
+using Application.Features.Admin.Commands;
 using Application.Interfaces.Repositories;
 using Domain.Models;
+using Infrastructure.Data;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Presentation.Endpoints;
 
@@ -82,6 +85,38 @@ public static class AdminEndpoints
                 ? Results.Ok(new { Message = "Расписание успешно добавлено." }) 
                 : Results.BadRequest(new { error = "У этого врача уже есть расписание на выбранный день." });
         });
+        
+        group.MapGet("/patients", async (ClinicDbContext db) =>
+        {
+            // Мы берем пациентов, у которых аккаунт существует и не помечен как удаленный
+            var patients = await db.Patients
+                .Include(p => p.Account)
+                .Where(p => p.Account != null && p.Account.IsDeleted == false) 
+                .Select(p => new {
+                    AccountId = p.Account.Id,
+                    FirstName = p.FirstName,
+                    LastName = p.LastName,
+                    PassportSeriesNumber = p.PassportSeriesNumber,
+                    Email = p.Account.Email
+                })
+                .ToListAsync();
+                
+            return Results.Ok(patients);
+        }).RequireAuthorization("StaffOnly");
+
+        // Удаление пациента персоналом
+        group.MapDelete("/patients/{targetAccountId:guid}", async (Guid targetAccountId, ClaimsPrincipal user, IMediator mediator) =>
+        {
+            var requesterIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = user.FindFirst(ClaimTypes.Role)?.Value;
+            if (!Guid.TryParse(requesterIdStr, out var requesterId) || role == null) return Results.Unauthorized();
+
+            var success = await mediator.Send(new Application.Features.Profiles.Commands.DeletePatientCommand(targetAccountId, requesterId, role));
+            
+            return success 
+                ? Results.Ok(new { Message = "Пациент успешно удален из системы." }) 
+                : Results.BadRequest(new { error = "Ошибка при удалении пациента." });
+        }).RequireAuthorization("StaffOnly");
     }
 }
 

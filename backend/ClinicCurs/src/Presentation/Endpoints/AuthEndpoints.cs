@@ -2,6 +2,7 @@
 using Application.Features.Auth.Commands;
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
+using Domain.Enums;
 using Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -113,13 +114,27 @@ public static class AuthEndpoints
                 : Results.BadRequest(new { error = result.ErrorMessage });
         });
         
-        group.MapGet("/me", async (ClaimsPrincipal user, IGenericRepository<Account> accountRepo) =>
+        group.MapGet("/me", async (
+            ClaimsPrincipal user, 
+            IGenericRepository<Account> accountRepo,
+            IGenericRepository<Patient> patientRepo,
+            IGenericRepository<Doctor> doctorRepo,
+            IGenericRepository<Registrar> registrarRepo) =>
         {
             var accountIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!Guid.TryParse(accountIdClaim, out var accountId)) return Results.Unauthorized();
 
             var account = await accountRepo.GetByIdAsync(accountId);
             if (account == null) return Results.NotFound();
+
+            // Ищем URL аватара в зависимости от роли
+            string? avatarUrl = null;
+            if (account.Role == RoleType.patient) 
+                avatarUrl = (await patientRepo.FirstOrDefaultAsync(p => p.AccountId == accountId))?.AvatarUrl;
+            else if (account.Role == RoleType.doctor) 
+                avatarUrl = (await doctorRepo.FirstOrDefaultAsync(d => d.AccountId == accountId))?.AvatarUrl;
+            else if (account.Role == RoleType.registrar) 
+                avatarUrl = (await registrarRepo.FirstOrDefaultAsync(r => r.AccountId == accountId))?.AvatarUrl;
 
             return Results.Ok(new 
             { 
@@ -128,10 +143,25 @@ public static class AuthEndpoints
                 account.EmailVerified, 
                 account.PhoneVerified, 
                 account.IdentityVerified,
-                Role = account.Role.ToString() 
+                Role = account.Role.ToString(),
+                AvatarUrl = avatarUrl // ТЕПЕРЬ ВОЗВРАЩАЕМ ФОТО
             });
         }).RequireAuthorization();
+        
+        // Самостоятельное удаление профиля пациентом
+        group.MapDelete("/me", async (ClaimsPrincipal user, IMediator mediator) =>
+        {
+            var accountIdStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = user.FindFirst(ClaimTypes.Role)?.Value;
+            if (!Guid.TryParse(accountIdStr, out var accountId) || role == null) return Results.Unauthorized();
 
+            var success = await mediator.Send(new Application.Features.Profiles.Commands.DeletePatientCommand(accountId, accountId, role));
+            
+            return success 
+                ? Results.Ok(new { Message = "Ваш профиль успешно удален и анонимизирован." }) 
+                : Results.BadRequest(new { error = "Ошибка при удалении профиля." });
+        }).RequireAuthorization("PatientOnly");
+        
         app.MapGet("/api/secure-data", (ClaimsPrincipal user) =>
             {
                 var email = user.FindFirstValue(ClaimTypes.Email);

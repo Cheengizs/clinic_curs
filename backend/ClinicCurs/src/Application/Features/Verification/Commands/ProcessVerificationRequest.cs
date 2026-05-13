@@ -40,19 +40,16 @@ public class ProcessVerificationRequestHandler : IRequestHandler<ProcessVerifica
         if (verificationReq == null || verificationReq.Status != VerificationStatuses.wait)
             return new ProcessVerificationResult(false, "Заявка не найдена или уже была обработана.");
 
-        // 2. Ищем профиль регистратора (он должен существовать, чтобы привязать обработку)
         var registrar = await _registrarRepo.FirstOrDefaultAsync(r => r.AccountId == request.RegistrarAccountId);
         if (registrar == null)
-            return new ProcessVerificationResult(false, "Профиль регистратора не найден. Обратитесь к администратору.");
+            return new ProcessVerificationResult(false, "Профиль регистратора не найден.");
 
-        // Обновляем саму заявку
         verificationReq.RegistrarId = registrar.Id;
         verificationReq.ProcessedAt = DateTime.UtcNow;
         verificationReq.Status = request.IsApproved ? VerificationStatuses.verified : VerificationStatuses.declined;
         
         _requestRepo.Update(verificationReq);
 
-        // 3. Если одобрено — создаем пациента и медкарту
         if (request.IsApproved)
         {
             var account = await _accountRepo.GetByIdAsync(verificationReq.AccountId);
@@ -69,24 +66,23 @@ public class ProcessVerificationRequestHandler : IRequestHandler<ProcessVerifica
                 LastName = verificationReq.LastName,
                 MiddleName = verificationReq.MiddleName,
                 BirthDate = verificationReq.BirthDate,
+                
+                Gender = verificationReq.Gender, // <--- БЕРЕМ РЕАЛЬНЫЕ ДАННЫЕ
+                ResidentialAddress = verificationReq.ResidentialAddress, // <--- БЕРЕМ РЕАЛЬНЫЕ ДАННЫЕ
+                
                 PassportSeriesNumber = verificationReq.PassportSeriesNumber,
                 PersonalNumber = verificationReq.PersonalNumber,
-                Gender = Gender.male, // Default. Потом можно добавить выбор пола в заявку
-                ResidentialAddress = "Не указан", 
                 AvatarUrl = "default_avatar.png"
             };
 
             await _patientRepo.AddAsync(patient);
-            
-            // Сохраняем, чтобы БД сгенерировала Patient.Id для медкарты
             await _patientRepo.SaveChangesAsync();
 
             var medicalCard = new MedicalCard
             {
                 PatientId = patient.Id,
-                // Генерируем красивый номер карты: MC-ГодМесяцДень-Последние4ЦифрыИНН
                 CardNumber = $"MC-{DateTime.UtcNow:yyyyMMdd}-{patient.PersonalNumber.Substring(Math.Max(0, patient.PersonalNumber.Length - 4))}",
-                BloodType = BloodTypeEnum.O_first, // Default, пока не сдадут кровь
+                BloodType = BloodTypeEnum.O_first, 
                 RhesusFactor = RhesusFactorEnum.positive,
                 ChronicDiseases = "Нет данных",
                 Allergies = "Нет данных"
@@ -95,7 +91,6 @@ public class ProcessVerificationRequestHandler : IRequestHandler<ProcessVerifica
             await _medicalCardRepo.AddAsync(medicalCard);
         }
 
-        // 4. Финальное сохранение всех изменений
         await _requestRepo.SaveChangesAsync();
         await _medicalCardRepo.SaveChangesAsync();
 

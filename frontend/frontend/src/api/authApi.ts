@@ -8,6 +8,7 @@ export interface AccountMeDto {
   phoneVerified: boolean;
   identityVerified: boolean;
   role: string;
+  avatarUrl: string | null; // ДОБАВЛЕНО
 }
 
 export const authApi = {
@@ -48,6 +49,10 @@ export const authApi = {
   },
   logout: async (refreshToken: string) => {
     const response = await axiosInstance.post("/auth/logout", { refreshToken });
+    return response.data;
+  },
+  deleteMe: async () => {
+    const response = await axiosInstance.delete("/auth/me");
     return response.data;
   },
 };
